@@ -56,10 +56,10 @@ export default function MeterPanel() {
         suffix=""
       />
       <MeterBar
-        label="Pollution"
-        value={pollution}
-        color={pollution > 50 ? '#ef4444' : '#f59e0b'}
-        icon="🏭"
+        label="Air Quality"
+        value={100 - pollution}
+        color={pollution > 50 ? '#ef4444' : '#22c55e'}
+        icon="🌿"
         suffix="%"
       />
       <MeterBar

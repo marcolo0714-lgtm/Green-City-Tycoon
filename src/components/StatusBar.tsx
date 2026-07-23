@@ -5,6 +5,11 @@ export default function StatusBar() {
   const selectedBuilding = useGameStore((s) => s.selectedBuilding);
   const tickCount = useGameStore((s) => s.tickCount);
   const gameSpeed = useGameStore((s) => s.gameSpeed);
+  const gameResult = useGameStore((s) => s.gameResult);
+  const resetGame = useGameStore((s) => s.resetGame);
+
+  const year = Math.floor(tickCount / 12) + 1;
+  const month = (tickCount % 12) + 1;
 
   let moneyColor = '#22c55e';
   if (money < 100) moneyColor = '#ef4444';
@@ -16,7 +21,7 @@ export default function StatusBar() {
     <div className="status-bar">
       <h1 className="game-title">Green City Tycoon</h1>
       <div className="status-info">
-        <span className="tick-display">⏱ Tick {tickCount}</span>
+        <span className="tick-display">📅 Year {year}, Month {month}</span>
         <span className="speed-badge" title={`Speed: ${speedLabel}`}>
           {gameSpeed === 0 ? '⏸' : gameSpeed === 2 ? '⏩' : '▶'} {speedLabel}
         </span>
@@ -24,10 +29,13 @@ export default function StatusBar() {
           <span className="money-icon">💰</span>
           <span className="money-value">${money}</span>
         </div>
-        {selectedBuilding && (
+        {selectedBuilding && !gameResult && (
           <div className="selection-hint">
             {selectedBuilding.emoji} {selectedBuilding.name} — click tile to place
           </div>
+        )}
+        {gameResult && (
+          <button className="reset-btn" onClick={resetGame}>New Game</button>
         )}
       </div>
     </div>
