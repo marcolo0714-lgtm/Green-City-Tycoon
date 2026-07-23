@@ -1,0 +1,462 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0b1120;
+  color: #e2e8f0;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ========== STATUS BAR ========== */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: #111827;
+  border-bottom: 1px solid #1e293b;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.game-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #22c55e;
+  letter-spacing: -0.3px;
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.tick-display {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.speed-badge {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  background: #1e293b;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.money-display {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.money-icon {
+  font-size: 1rem;
+}
+
+.selection-hint {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  background: #1e293b;
+  padding: 3px 10px;
+  border-radius: 5px;
+}
+
+/* ========== GAME LAYOUT ========== */
+
+.game-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.left-panel {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: #111827;
+  border-right: 1px solid #1e293b;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.right-panel {
+  width: 220px;
+  flex-shrink: 0;
+  background: #111827;
+  border-left: 1px solid #1e293b;
+  padding: 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.grid-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ========== SPEED CONTROL ========== */
+
+.speed-control {
+  display: flex;
+  gap: 4px;
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid #1e293b;
+  flex-shrink: 0;
+}
+
+.speed-btn {
+  flex: 1;
+  padding: 6px 4px;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.speed-btn:hover {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+.speed-btn.active {
+  background: #1e3a5f;
+  border-color: #3b82f6;
+  color: #60a5fa;
+}
+
+/* ========== BUILDING MENU ========== */
+
+.building-menu {
+  padding: 8px 12px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.building-menu h2 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.building-category {
+  margin-bottom: 10px;
+}
+
+.category-header {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.building-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.building-btn {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.7rem;
+  color: #cbd5e1;
+  width: 100%;
+}
+
+.building-btn:hover:not(:disabled) {
+  background: #1e293b;
+}
+
+.building-btn.selected {
+  background: var(--sel-bg, #1e293b);
+  border-color: var(--sel-border, #64748b);
+}
+
+.building-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.building-emoji {
+  font-size: 0.95rem;
+  line-height: 1;
+  align-self: center;
+}
+
+.building-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.building-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.building-name {
+  font-weight: 500;
+  font-size: 0.68rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.building-cost {
+  font-weight: 700;
+  font-size: 0.65rem;
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.building-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.building-stat {
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0 4px;
+  border-radius: 3px;
+  line-height: 1.3;
+}
+
+.building-stat.income {
+  color: #22c55e;
+  background: #22c55e1a;
+}
+
+.building-stat.clean {
+  color: #06b6d4;
+  background: #06b6d41a;
+}
+
+.building-stat.dirty {
+  color: #ef4444;
+  background: #ef44441a;
+}
+
+.cancel-btn {
+  width: 100%;
+  padding: 6px;
+  margin-top: 6px;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.72rem;
+  transition: all 0.12s ease;
+}
+
+.cancel-btn:hover {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+/* ========== METER PANEL ========== */
+
+.meter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.meter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meter-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.meter-icon {
+  font-size: 0.8rem;
+}
+
+.meter-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex: 1;
+}
+
+.meter-value {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.meter-track {
+  height: 6px;
+  background: #1e293b;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+/* ========== 2.5D ISOMETRIC GRID ========== */
+
+.grid-scene {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, #0e7490 0%, #155e75 30%, #1e3a5f 60%, #0f172a 100%);
+}
+.grid-scene.dragging { cursor: grabbing; }
+
+.ocean-2d {
+  position: absolute;
+  width: 600px;
+  height: 300px;
+  top: 50%; left: 50%;
+  margin-left: -300px;
+  margin-top: -150px;
+  background: radial-gradient(ellipse at center, rgba(14,116,144,0.4) 0%, rgba(14,116,144,0.1) 60%, transparent 100%);
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.grid-pan {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 0; height: 0;
+}
+
+.island-base-2d {
+  position: absolute;
+  width: 460px;
+  height: 230px;
+  left: -230px;
+  top: -17px;
+  background: radial-gradient(ellipse at center, #2a3815 0%, #141a08 70%, transparent 100%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.tile-iso {
+  position: absolute;
+  width: 56px;
+  height: 28px;
+  cursor: pointer;
+}
+
+.tile-iso-ground {
+  position: absolute;
+  inset: 0;
+  width: 56px;
+  height: 28px;
+  background: #374a1e;
+  border: 1px solid #4a6828;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  pointer-events: none;
+}
+
+.tile-iso-placeholder {
+  position: absolute;
+  width: 56px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.35;
+  pointer-events: none;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  background: rgba(100, 200, 100, 0.2);
+}
+
+.tile-emoji {
+  font-size: 1.1rem;
+  line-height: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+}
+
+/* ========== RESPONSIVE ========== */
+
+@media (max-width: 900px) {
+  .game-layout { flex-direction: column; }
+  .left-panel {
+    width: 100%; max-height: 35vh; flex-direction: column;
+    border-right: none; border-bottom: 1px solid #1e293b;
+  }
+  .right-panel {
+    width: 100%; border-left: none; border-top: 1px solid #1e293b; padding: 8px 12px;
+  }
+  .meter-panel { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+  .meter { flex: 1; min-width: 80px; }
+  .grid-container { padding: 4px; }
+  .status-bar { flex-direction: column; gap: 6px; align-items: flex-start; padding: 8px 12px; }
+  .status-info { flex-wrap: wrap; gap: 6px; }
+}
