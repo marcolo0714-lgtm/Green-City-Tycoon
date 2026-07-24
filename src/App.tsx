@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import GameScene3D from './components/GameScene3D';
 import BuildingMenu from './components/BuildingMenu';
 import StatusBar from './components/StatusBar';
@@ -15,7 +15,9 @@ function App() {
   const gameSpeed = useGameStore((s) => s.gameSpeed);
   const gameResult = useGameStore((s) => s.gameResult);
   const tick = useGameStore((s) => s.tick);
+  const resetGame = useGameStore((s) => s.resetGame);
   const intervalRef = useRef<number | null>(null);
+  const [sceneKey, setSceneKey] = useState(0);
 
   useEffect(() => {
     if (intervalRef.current !== null) {
@@ -38,16 +40,25 @@ function App() {
     };
   }, [gameSpeed, gameResult, tick]);
 
+  const handleReset = useCallback(() => {
+    if (window.confirm('Reset your city? All progress will be lost.')) {
+      resetGame();
+      setSceneKey(k => k + 1);
+    }
+  }, [resetGame]);
+
+  const speedClass = gameSpeed === 0 ? 'paused' : gameSpeed === 2 ? 'fast' : '';
+
   return (
-    <div className="app">
-      <StatusBar />
+    <div className={`app ${speedClass}`}>
+      <StatusBar onReset={handleReset} />
       <div className="game-layout">
         <div className="left-panel">
           <SpeedControl />
           <BuildingMenu />
         </div>
         <main className="grid-container">
-          <GameScene3D />
+          <GameScene3D key={sceneKey} />
         </main>
         <div className="right-panel">
           <MeterPanel />

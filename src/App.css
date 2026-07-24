@@ -317,6 +317,7 @@ body {
 }
 
 .meter {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -358,6 +359,82 @@ body {
   height: 100%;
   border-radius: 3px;
   transition: width 0.4s ease;
+}
+
+.meter-delta {
+  position: absolute;
+  right: 50px;
+  top: -14px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  pointer-events: none;
+  animation: deltaFloat 1.8s ease-out forwards;
+}
+
+.meter-delta.up { color: #4ade80; }
+.meter-delta.down { color: #f87171; }
+
+.dev-toggle-btn {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border: 1px dashed #4b5563;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.65rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+}
+.dev-toggle-btn:hover {
+  border-color: #fbbf24;
+  color: #fbbf24;
+  background: #fbbf2410;
+}
+
+@keyframes deltaFloat {
+  0% { opacity: 1; transform: translateY(0); }
+  60% { opacity: 1; transform: translateY(-16px); }
+  100% { opacity: 0; transform: translateY(-24px); }
+}
+
+.app.paused .meter-delta,
+.app.paused .build-popup,
+.app.paused .warning-toast {
+  animation-play-state: paused;
+}
+
+/* ========== METER DELTA POPUPS ========== */
+
+.build-popup {
+  background: #111827ee;
+  border: 1px solid #4ade80;
+  border-radius: 8px;
+  padding: 6px 12px;
+  text-align: center;
+  animation: buildPopup 2.5s ease-out forwards;
+  white-space: nowrap;
+}
+
+.build-popup-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #4ade80;
+  margin-bottom: 2px;
+}
+
+.build-popup-stat {
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+.build-popup-stat.up { color: #4ade80; }
+.build-popup-stat.down { color: #f87171; }
+
+@keyframes buildPopup {
+  0% { opacity: 0; transform: translateY(10px); }
+  15% { opacity: 1; transform: translateY(0); }
+  70% { opacity: 1; transform: translateY(-8px); }
+  100% { opacity: 0; transform: translateY(-24px); }
 }
 
 /* ========== 2.5D ISOMETRIC GRID ========== */
@@ -544,6 +621,8 @@ body {
   transition: background 0.15s;
 }
 .game-overlay-btn:hover { background: #2563eb; }
+.game-overlay-btn.secondary { background: #334155; }
+.game-overlay-btn.secondary:hover { background: #475569; }
 
 /* ========== RESET BUTTON (in status bar) ========== */
 
@@ -559,6 +638,19 @@ body {
   font-family: inherit;
 }
 .reset-btn:hover { background: #2563eb; }
+
+.status-icon-btn {
+  background: transparent;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+}
+.status-icon-btn:hover { background: #1e293b; color: #e2e8f0; }
 
 /* ========== TUTORIAL OVERLAY ========== */
 

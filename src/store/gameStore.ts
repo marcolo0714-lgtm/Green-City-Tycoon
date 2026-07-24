@@ -1,9 +1,12 @@
 import { create } from 'zustand';
-import type { Building, GameMeters, GameSpeed, GameState, Grid, Warning } from '../types';
+import type { Building, GameMeters, GameState, Grid, Warning, TerrainType, TerrainTile, DisasterType } from '../types';
+import { BUILDINGS } from '../data/buildings';
 
-const GRID_SIZE = 6;
-const STARTING_MONEY = 500;
+const GRID_SIZE = 8;
+const STARTING_MONEY = 600;
 const BUILD_TICKS = 2;
+const TERRAIN_CLEAR_COST: Record<TerrainType, number> = { mountain: 8000, lake: 4000, forest: 2000 };
+const TERRAIN_CLEAR_TIME: Record<TerrainType, number> = { mountain: 6, lake: 4, forest: 2 };
 
 function createEmptyGrid(size: number): Grid {
   return Array.from({ length: size }, () => Array(size).fill(null));
@@ -11,26 +14,70 @@ function createEmptyGrid(size: number): Grid {
 
 function countBuildings(grid: Grid, category: string): number {
   let count = 0;
-  for (const row of grid)
-    for (const cell of row)
-      if (cell && cell.category === category) count++;
+  for (const row of grid) for (const cell of row) if (cell && cell.category === category) count++;
   return count;
 }
 
 function totalBuildings(grid: Grid): number {
   let count = 0;
-  for (const row of grid)
-    for (const cell of row)
-      if (cell) count++;
+  for (const row of grid) for (const cell of row) if (cell) count++;
   return count;
 }
 
 function sumBuildingStat(grid: Grid, stat: keyof Building): number {
   let sum = 0;
-  for (const row of grid)
-    for (const cell of row)
-      if (cell) sum += (cell[stat] as number) || 0;
+  for (const row of grid) for (const cell of row) if (cell) sum += (cell[stat] as number) || 0;
   return sum;
+}
+
+function isOuter(row: number, col: number): boolean {
+  return row === 0 || row === GRID_SIZE - 1 || col === 0 || col === GRID_SIZE - 1;
+}
+
+function generateTerrain(): Record<string, TerrainTile> {
+  const map: Record<string, TerrainTile> = {};
+  const used = new Set<string>();
+  const types: TerrainType[] = ['mountain', 'mountain', 'lake', 'lake', 'forest', 'forest', 'forest', 'forest'];
+
+  for (const type of shuffle(types)) {
+    let placed = false;
+    const isEdge = type === 'mountain' || type === 'lake';
+    for (let attempt = 0; attempt < 200 && !placed; attempt++) {
+      const r = Math.floor(Math.random() * GRID_SIZE);
+      const c = Math.floor(Math.random() * GRID_SIZE);
+      if (isEdge && (r <= 0 || r >= GRID_SIZE - 1 || c <= 0 || c >= GRID_SIZE - 1)) continue;
+      const dirs = [[0, 1], [1, 0]];
+      for (const [dr, dc] of shuffle(dirs)) {
+        const r2 = r + dr, c2 = c + dc;
+        if (r2 < 0 || r2 >= GRID_SIZE || c2 < 0 || c2 >= GRID_SIZE) continue;
+        if (isEdge && (r2 <= 0 || r2 >= GRID_SIZE - 1 || c2 <= 0 || c2 >= GRID_SIZE - 1)) continue;
+        const k1 = `${r},${c}`, k2 = `${r2},${c2}`;
+        if (used.has(k1) || used.has(k2)) continue;
+        used.add(k1); used.add(k2);
+        map[k1] = { type, clearing: 0 };
+        map[k2] = { type, clearing: 0 };
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) break;
+  }
+  return map;
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function gridWithoutConstruction(grid: Grid, constructionMap: Record<string, number>): Grid {
+  return grid.map((row, ri) =>
+    row.map((cell, ci) => cell && (constructionMap[`${ri},${ci}`] ?? 0) > 0 ? null : cell)
+  );
 }
 
 function recalculateMeters(grid: Grid, currentMeters: GameMeters): GameMeters {
@@ -47,27 +94,17 @@ function recalculateMeters(grid: Grid, currentMeters: GameMeters): GameMeters {
   const happinessFromPollution = -pollution * 0.3;
   const happiness = Math.max(0, Math.min(100, happinessBase + happinessFromBuildings + happinessFromPollution));
 
-  const renewable = total > 0
-    ? Math.min(100, (energyCount / total) * 60 + sumBuildingStat(grid, 'renewableBoost'))
-    : 0;
-
-  const resilienceRaw = sumBuildingStat(grid, 'resilienceBoost');
-  const resilience = Math.min(100, resilienceRaw);
+  const renewable = total > 0 ? Math.min(100, (energyCount / total) * 60 + sumBuildingStat(grid, 'renewableBoost')) : 0;
+  const resilience = Math.min(100, sumBuildingStat(grid, 'resilienceBoost'));
 
   const housingCapacity = ecoCount * 25 + greenCount * 5;
-  const popChange = housingCapacity > 0
-    ? (happiness / 100) * 0.5
-    : -1;
+  const popChange = housingCapacity > 0 ? (happiness / 100) * 2 : -1;
   const rawPop = currentMeters.population + popChange;
-  const newPopulation = housingCapacity > 0
-    ? Math.min(housingCapacity, rawPop)
-    : Math.max(0, rawPop);
-
-  const income = sumBuildingStat(grid, 'income');
+  const newPopulation = housingCapacity > 0 ? Math.min(housingCapacity, rawPop) : Math.max(0, rawPop);
 
   return {
-    money: currentMeters.money + income,
-    population: Math.floor(newPopulation * 10) / 10,
+    money: currentMeters.money + sumBuildingStat(grid, 'income'),
+    population: Math.floor(newPopulation),
     pollution: Math.round(pollution),
     happiness: Math.round(happiness),
     renewablePct: Math.round(renewable),
@@ -79,186 +116,267 @@ function recalculateGrid(grid: Grid, currentMeters: GameMeters): GameMeters {
   return recalculateMeters(grid, currentMeters);
 }
 
-/** Filter out buildings still under construction from the grid before meter calc */
-function gridWithoutConstruction(grid: Grid, constructionMap: Record<string, number>): Grid {
-  return grid.map((row, ri) =>
-    row.map((cell, ci) =>
-      cell && (constructionMap[`${ri},${ci}`] ?? 0) > 0 ? null : cell
-    )
-  );
-}
-
 function checkWarnings(meters: GameMeters, existing: Warning[]): Warning[] {
   const next: Warning[] = [];
-
-  const addWarning = (type: Warning['type'], message: string, threshold: boolean) => {
+  const add = (type: Warning['type'], msg: string, thresh: boolean) => {
     const prev = existing.find(w => w.type === type);
-    if (threshold) {
-      next.push({ type, message, countdown: prev ? prev.countdown - 1 : 5 });
-    }
+    if (thresh) next.push({ type, message: msg, countdown: prev ? prev.countdown - 1 : 5 });
   };
-
-  addWarning('money', 'City is nearly bankrupt!', meters.money < 50);
-  addWarning('population', 'Citizens are leaving!', meters.population < 5);
-  addWarning('pollution', 'Pollution is choking the city!', meters.pollution > 80);
-  addWarning('happiness', 'Citizens are rioting!', meters.happiness < 20);
-
+  add('money', 'City is nearly bankrupt!', meters.money < 200);
+  add('population', 'Citizens are leaving!', meters.population < 5);
+  add('pollution', 'Pollution is choking the city!', meters.pollution > 80);
+  add('happiness', 'Citizens are rioting!', meters.happiness < 20);
   return next;
 }
 
 function checkGameOver(warnings: Warning[]): 'lose' | null {
-  for (const w of warnings) {
-    if (w.countdown <= 0) return 'lose';
-  }
+  for (const w of warnings) if (w.countdown <= 0) return 'lose';
   return null;
 }
 
 function checkWin(meters: GameMeters): boolean {
-  return (
-    meters.money >= 2000 &&
-    meters.population >= 100 &&
-    meters.happiness >= 90 &&
-    meters.resilience >= 90 &&
-    meters.renewablePct >= 80 &&
-    meters.pollution <= 10
-  );
+  return meters.money >= 100000 && meters.population >= 100 && meters.happiness >= 90
+    && meters.resilience >= 90 && meters.renewablePct >= 80 && meters.pollution <= 10;
+}
+
+// ---- disaster logic ----
+const DISASTER_MESSAGES: Record<DisasterType, string> = {
+  tsunami: 'A tsunami is approaching the coast!',
+  earthquake: 'Seismic activity detected — earthquake incoming!',
+  drought: 'A prolonged drought is forecast!',
+  smog: 'Heavy smog is building up over the city!',
+};
+
+function applyDisaster(state: { grid: Grid; meters: GameMeters }, type: DisasterType): { grid: Grid; meters: GameMeters } {
+  const grid = state.grid.map(r => [...r]);
+  let m = { ...state.meters };
+
+  if (type === 'tsunami') {
+    let destroyed = 0;
+    // Destroy buildings within 2 tiles of any edge
+    for (let ri = 0; ri < GRID_SIZE; ri++) {
+      for (let ci = 0; ci < GRID_SIZE; ci++) {
+        const dist = Math.min(ri, ci, GRID_SIZE - 1 - ri, GRID_SIZE - 1 - ci);
+        if (dist <= 1 && grid[ri][ci]) {
+          // Check if seawall/absorber on same row/col within 1 tile protects
+          let protected_ = false;
+          for (let dr = -1; dr <= 1 && !protected_; dr++) {
+            for (let dc = -1; dc <= 1 && !protected_; dc++) {
+              const nr = ri + dr, nc = ci + dc;
+              if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE) {
+                const b = grid[nr][nc];
+                if (b && (b.id === 'seawall' || b.id === 'wave_absorber')) protected_ = true;
+              }
+            }
+          }
+          if (!protected_) {
+            grid[ri][ci] = null;
+            destroyed++;
+          }
+        }
+      }
+    }
+    m.money -= destroyed * 500;
+    m.resilience = Math.max(0, m.resilience - 30);
+    m.happiness = Math.max(0, m.happiness - 10);
+  } else if (type === 'earthquake') {
+    let damaged = 0;
+    const emergencyCount = countBuildings(grid, 'science'); // rough: any science buildings protect
+    for (let ri = 0; ri < GRID_SIZE; ri++) {
+      for (let ci = 0; ci < GRID_SIZE; ci++) {
+        if (grid[ri][ci] && Math.random() < 0.15 && damaged < emergencyCount + 1) {
+          grid[ri][ci] = null;
+          damaged++;
+        }
+      }
+    }
+    m.money -= damaged * 800;
+    m.resilience = Math.max(0, m.resilience - 20);
+    m.happiness = Math.max(0, m.happiness - 8);
+  } else if (type === 'drought') {
+    m.pollution = Math.min(100, m.pollution + 30);
+    m.happiness = Math.max(0, m.happiness - 15);
+  } else if (type === 'smog') {
+    m.pollution = Math.min(100, m.pollution + 20);
+    m.population = Math.max(0, m.population - 5);
+    m.happiness = Math.max(0, m.happiness - 5);
+  }
+  return { grid, meters: m };
 }
 
 export const useGameStore = create<GameState>((set) => ({
   grid: createEmptyGrid(GRID_SIZE),
   gridSize: GRID_SIZE,
   money: STARTING_MONEY,
-  population: 10,
-  pollution: 0,
-  happiness: 50,
-  renewablePct: 0,
-  resilience: 0,
-  selectedBuilding: null,
-  tickCount: 0,
-  gameSpeed: 1,
-  warnings: [],
-  gameResult: null,
-  tutorialComplete: false,
-  constructionMap: {},
+  population: 10, pollution: 0, happiness: 50, renewablePct: 0, resilience: 0,
+  selectedBuilding: null, tickCount: 0, gameSpeed: 1,
+  warnings: [], gameResult: null, tutorialComplete: false,
+  constructionMap: {}, terrainMap: generateTerrain(), terrainClearing: {},
+  disasterWarning: null, disasterActive: null,
+  meterDeltas: {}, justCompleted: [],
 
-  selectBuilding: (building: Building | null) =>
-    set({ selectedBuilding: building }),
+  selectBuilding: (b) => set({ selectedBuilding: b }),
 
-  placeBuilding: (row: number, col: number) =>
-    set((state) => {
-      if (!state.selectedBuilding || state.gameResult) return state;
-      if (state.grid[row][col] !== null) return state;
-      if (state.money < state.selectedBuilding.cost) return state;
+  placeBuilding: (row, col) => set((state) => {
+    if (!state.selectedBuilding || state.gameResult) return state;
+    if (state.grid[row][col] !== null) return state;
+    if (state.terrainMap[`${row},${col}`]) return state;
+    if (state.terrainClearing[`${row},${col}`] > 0) return state;
+    if (state.money < state.selectedBuilding.cost) return state;
+    if (state.selectedBuilding.coastalOnly && !isOuter(row, col)) return state;
 
-      const building = state.selectedBuilding;
-      const newGrid = state.grid.map((r, ri) =>
-        r.map((cell, ci) => (ri === row && ci === col ? building : cell))
-      );
+    const b = state.selectedBuilding;
+    const newGrid = state.grid.map((r, ri) => r.map((c, ci) => ri === row && ci === col ? b : c));
+    const newCMap = { ...state.constructionMap, [`${row},${col}`]: BUILD_TICKS };
+    const active = gridWithoutConstruction(newGrid, newCMap);
+    const m = recalculateGrid(active, {
+      money: state.money - b.cost, population: state.population,
+      pollution: state.pollution, happiness: state.happiness,
+      renewablePct: state.renewablePct, resilience: state.resilience,
+    });
+    return { grid: newGrid, constructionMap: newCMap, selectedBuilding: null, ...m };
+  }),
 
-      const newConstructionMap = { ...state.constructionMap, [`${row},${col}`]: BUILD_TICKS };
+  removeBuilding: (row, col) => set((state) => {
+    if (state.grid[row][col] === null || state.gameResult) return state;
+    const newGrid = state.grid.map((r, ri) => r.map((c, ci) => ri === row && ci === col ? null : c));
+    const newCMap = { ...state.constructionMap }; delete newCMap[`${row},${col}`];
+    const active = gridWithoutConstruction(newGrid, newCMap);
+    return { grid: newGrid, constructionMap: newCMap, ...recalculateGrid(active, {
+      money: state.money, population: state.population, pollution: state.pollution,
+      happiness: state.happiness, renewablePct: state.renewablePct, resilience: state.resilience,
+    }) };
+  }),
 
-      // Use filtered grid (no construction buildings count) for meters
-      const activeGrid = gridWithoutConstruction(newGrid, newConstructionMap);
-      const meters = recalculateGrid(activeGrid, {
-        money: state.money - building.cost,
-        population: state.population,
-        pollution: state.pollution,
-        happiness: state.happiness,
-        renewablePct: state.renewablePct,
-        resilience: state.resilience,
-      });
+  clearTerrain: (row, col) => set((state) => {
+    const key = `${row},${col}`;
+    const t = state.terrainMap[key];
+    if (!t || state.gameResult) return state;
+    if (state.terrainClearing[key] > 0) return state;
+    const cost = TERRAIN_CLEAR_COST[t.type];
+    if (state.money < cost) return state;
+    return {
+      money: state.money - cost,
+      terrainClearing: { ...state.terrainClearing, [key]: TERRAIN_CLEAR_TIME[t.type] },
+    };
+  }),
 
-      return {
-        grid: newGrid,
-        constructionMap: newConstructionMap,
-        selectedBuilding: null,
-        ...meters,
-      };
-    }),
+  tick: () => set((state) => {
+    if (state.gameResult) return state;
 
-  removeBuilding: (row: number, col: number) =>
-    set((state) => {
-      if (state.grid[row][col] === null || state.gameResult) return state;
+    // Decrement construction
+    const justCompleted: string[] = [];
+    const newCMap: Record<string, number> = {};
+    for (const [k, v] of Object.entries(state.constructionMap)) {
+      const r = v - 1; if (r === 0) justCompleted.push(k); else if (r > 0) newCMap[k] = r;
+    }
+    // Decrement terrain clearing
+    const newTClear: Record<string, number> = {};
+    for (const [k, v] of Object.entries(state.terrainClearing)) {
+      const r = v - 1; if (r > 0) newTClear[k] = r;
+    }
 
-      const newGrid = state.grid.map((r, ri) =>
-        r.map((cell, ci) => (ri === row && ci === col ? null : cell))
-      );
+    // Process terrain clearing completions
+    let newTM = state.terrainMap;
+    for (const [k, v] of Object.entries(state.terrainClearing)) {
+      if (v === 1) { const t2 = { ...newTM }; delete t2[k]; newTM = t2; }
+    }
 
-      const newConstructionMap = { ...state.constructionMap };
-      delete newConstructionMap[`${row},${col}`];
+    // Disaster logic
+    let disasterWarning = state.disasterWarning;
+    let disasterActive = state.disasterActive;
+    let gridAfterDisaster = state.grid.map(r => [...r]);
+    let extraMeters: Partial<GameMeters> = {};
 
-      const activeGrid = gridWithoutConstruction(newGrid, newConstructionMap);
-      return {
-        grid: newGrid,
-        constructionMap: newConstructionMap,
-        ...recalculateGrid(activeGrid, {
-          money: state.money,
-          population: state.population,
-          pollution: state.pollution,
-          happiness: state.happiness,
-          renewablePct: state.renewablePct,
-          resilience: state.resilience,
-        }),
-      };
-    }),
+    // Process active disaster
+    if (disasterActive) {
+      const remaining = disasterActive.daysLeft - 1;
+      if (remaining <= 0) disasterActive = null;
+      else disasterActive = { ...disasterActive, daysLeft: remaining };
+    }
 
-  tick: () =>
-    set((state) => {
-      if (state.gameResult) return state;
-
-      // Decrement construction timers
-      const newConstructionMap: Record<string, number> = {};
-      for (const [key, val] of Object.entries(state.constructionMap)) {
-        const remaining = val - 1;
-        if (remaining > 0) newConstructionMap[key] = remaining;
+    // Generate or tick warning
+    if (!disasterWarning && !disasterActive && state.tickCount > 0 && Math.random() < 0.3) {
+      const types: DisasterType[] = ['tsunami', 'earthquake', 'drought', 'smog'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      disasterWarning = { type, message: DISASTER_MESSAGES[type], daysLeft: 5 };
+    } else if (disasterWarning) {
+      const remaining = disasterWarning.daysLeft - 1;
+      if (remaining <= 0) {
+        const dw = disasterWarning!;
+        const result = applyDisaster({ grid: gridAfterDisaster, meters: state }, dw.type);
+        gridAfterDisaster = result.grid;
+        extraMeters = result.meters;
+        disasterWarning = null;
+        disasterActive = { type: dw.type, daysLeft: 3 };
+      } else {
+        disasterWarning = { ...disasterWarning, daysLeft: remaining };
       }
+    }
 
-      const activeGrid = gridWithoutConstruction(state.grid, newConstructionMap);
-      const meters = recalculateGrid(activeGrid, {
-        money: state.money,
-        population: state.population,
-        pollution: state.pollution,
-        happiness: state.happiness,
-        renewablePct: state.renewablePct,
-        resilience: state.resilience,
-      });
+    const active = gridWithoutConstruction(gridAfterDisaster, newCMap);
+    const meters = recalculateGrid(active, {
+      money: (extraMeters.money ?? state.money),
+      population: (extraMeters.population ?? state.population),
+      pollution: (extraMeters.pollution ?? state.pollution),
+      happiness: (extraMeters.happiness ?? state.happiness),
+      renewablePct: (extraMeters.renewablePct ?? state.renewablePct),
+      resilience: (extraMeters.resilience ?? state.resilience),
+    });
 
-      const warnings = checkWarnings(meters, state.warnings);
-      const gameOver = checkGameOver(warnings);
-      const won = gameOver ? false : checkWin(meters);
+    const warnings = checkWarnings(meters, state.warnings);
+    const gameOver = checkGameOver(warnings);
+    const won = gameOver ? false : checkWin(meters);
 
-      return {
-        ...meters,
-        tickCount: state.tickCount + 1,
-        constructionMap: newConstructionMap,
-        warnings,
-        gameResult: gameOver || (won ? 'win' : null),
-      };
-    }),
+    return {
+      ...meters, grid: gridAfterDisaster, terrainMap: newTM,
+      terrainClearing: newTClear, tickCount: state.tickCount + 1,
+      constructionMap: newCMap, warnings,
+      disasterWarning, disasterActive,
+      gameResult: gameOver || (won ? 'win' : null),
+      meterDeltas: {
+        money: meters.money - state.money,
+        population: +(meters.population - state.population).toFixed(0),
+        pollution: meters.pollution - state.pollution,
+        happiness: meters.happiness - state.happiness,
+        renewablePct: meters.renewablePct - state.renewablePct,
+        resilience: meters.resilience - state.resilience,
+      },
+      justCompleted,
+    };
+  }),
 
-  setGameSpeed: (speed: GameSpeed) => set({ gameSpeed: speed }),
+  setGameSpeed: (s) => set({ gameSpeed: s }),
+  dismissWarning: (type) => set((s) => ({ warnings: s.warnings.filter(w => w.type !== type) })),
+  clearMeterDeltas: () => set({ meterDeltas: {} }),
+  clearJustCompleted: () => set({ justCompleted: [] }),
 
-  dismissWarning: (type: Warning['type']) =>
-    set((state) => ({
-      warnings: state.warnings.filter(w => w.type !== type),
-    })),
+  completeTutorial: () => set({ tutorialComplete: true, gameSpeed: 1 }),
+  restartTutorial: () => set({ tutorialComplete: false, gameSpeed: 0 }),
 
-  completeTutorial: () => set({ tutorialComplete: true }),
+  toggleDevGrid: () => set((state) => {
+    const hasB = state.grid.some(r => r.some(c => c !== null));
+    if (hasB) return { grid: createEmptyGrid(GRID_SIZE), constructionMap: {} };
+    const ng = createEmptyGrid(GRID_SIZE);
+    let idx = 0;
+    for (let ri = 0; ri < GRID_SIZE && idx < BUILDINGS.length; ri++) {
+      const sc = ri % 2;
+      for (let ci = sc; ci < GRID_SIZE && idx < BUILDINGS.length; ci += 2) {
+        if (!state.terrainMap[`${ri},${ci}`]) { ng[ri][ci] = BUILDINGS[idx]; idx++; }
+      }
+    }
+    return { grid: ng, constructionMap: {} };
+  }),
 
-  resetGame: () =>
-    set({
-      grid: createEmptyGrid(GRID_SIZE),
-      money: STARTING_MONEY,
-      population: 10,
-      pollution: 0,
-      happiness: 50,
-      renewablePct: 0,
-      resilience: 0,
-      selectedBuilding: null,
-      tickCount: 0,
-      gameSpeed: 1,
-      warnings: [],
-      gameResult: null,
-      constructionMap: {},
-    }),
+  resetGame: () => set({
+    grid: createEmptyGrid(GRID_SIZE), money: STARTING_MONEY,
+    population: 10, pollution: 0, happiness: 50, renewablePct: 0, resilience: 0,
+    selectedBuilding: null, tickCount: 0, gameSpeed: 0,
+    warnings: [], gameResult: null, tutorialComplete: false,
+    constructionMap: {}, terrainMap: generateTerrain(), terrainClearing: {},
+    disasterWarning: null, disasterActive: null,
+    meterDeltas: {}, justCompleted: [],
+  }),
+
+  continueGame: () => set({ gameResult: null, gameSpeed: 1 }),
 }));
