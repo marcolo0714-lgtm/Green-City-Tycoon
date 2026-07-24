@@ -52,7 +52,9 @@ export interface GameState extends GameMeters {
   terrainClearing: Record<string, number>;
   disasterWarning: DisasterWarning | null;
   disasterActive: { type: DisasterType; daysLeft: number } | null;
+  disasterLevels: Record<DisasterType, number>;
   meterDeltas: MeterDeltas; justCompleted: string[];
+  destroyedTiles: string[];
   selectBuilding: (building: Building | null) => void;
   placeBuilding: (row: number, col: number) => void;
   removeBuilding: (row: number, col: number) => void;

@@ -40,7 +40,13 @@ GAME_STATS.md          — full game statistics reference
 - Building incomes are ×3 from original values
 - Buildings take 2 days to construct (constructionMap)
 - Terrain clears in 2-6 days (terrainClearing)
-- Disasters fire ~15% per day with 5-day warnings
+- Disaster levels: 1-5 for each type, increment on fire, scale all effects
+- Disaster warning: base 2 days, +1 per science building (max 5), 30% daily chance
+- Earthquake defense: Emergency Centers, Parks (/2), Resilience (/20) reduce destroy count
+- Drought defense: Parks save pop (max 5). Smog defense: clean-energy buildings
+- Destroyed buildings show red flashing overlays
+- Terrain tiles: brown (#8b4513), terrain roads: red (#7f1d1d)
+- Mountains/lakes cannot spawn on edge tiles (row/col 0 or 7)
 
 ## Current Grid
 - 8×8 (64 tiles)

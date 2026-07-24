@@ -98,7 +98,7 @@ resilience = clamp(0, 100, sum of resilienceBoosts)
 
 - Each terrain occupies **2 adjacent tiles** + the road between them (road turns red)
 - **2 mountains, 2 lakes, 4 forests** generated per game (8 pairs total = 16/64 tiles = 25%)
-- Terrain tiles show **red** ground; roads between same terrain pair are also red
+- Terrain tiles show **brown** ground; roads between same terrain pair are red (`#7f1d1d`)
 - Click terrain to see cost; click again to start clearing
 - During clearing: "🚧 Nd" label, tile remains unbuildable
 
@@ -106,20 +106,66 @@ resilience = clamp(0, 100, sum of resilienceBoosts)
 
 ## Disasters
 
-Random check: **15% chance per day** (only when no warning or active disaster is ongoing).
+Each disaster has **5 levels of intensity**. Level increases by 1 every time that disaster fires, capping at 5. Reset on game restart.
 
-### Warning Phase (5 days)
-A toast appears: *"A tsunami is approaching the coast!"* (etc.)
+Random check: **30% chance per day** (only when no warning or active disaster is ongoing).
+
+### Warning Phase (variable, 2-5 days)
+Base 2 days, +1 day per science building (max 5). Warning shows the upcoming level.
 
 ### Active Phase (3 days)
-A toast shows recovery time: *"tsunami aftermath (3d recovery)"*
+Recovery toast shows. Destroyed buildings show **red flashing overlays**.
 
-| Disaster | Effect | Defense |
-|---|---|---|
-| 🌊 **Tsunami** | Destroys buildings within 1 tile of any edge. -$500 per destroyed building. -30 resilience, -10 happiness. | Seawall/Wave Absorber within 1 tile protects adjacent buildings |
-| 🔥 **Earthquake** | Destroys ~15% of random buildings. -$800 per destroyed building. -20 resilience, -8 happiness. | Each science-category building absorbs 1 destruction |
-| ☀️ **Drought** | +30 pollution, -15 happiness | Green buildings reduce penalty (not yet implemented per-building) |
-| 💨 **Smog** | +20 pollution, -5 population, -5 happiness | Clean-energy/renewable buildings reduce penalty (not yet implemented per-building) |
+### 🌊 Tsunami
+
+| Level | Edge range | Cost/building | Resilience hit | Seawall protection |
+|---|---|---|---|---|
+| 1 | 1 tile | -$500 | -25 | Yes |
+| 2 | 1 tile | -$750 | -30 | Yes |
+| 3 | 2 tiles | -$1,000 | -35 | Yes |
+| 4 | 2 tiles | -$1,500 | -40 | Yes |
+| 5 | 3 tiles | -$2,000 | -50 | **No (bypassed)** |
+
+Happiness hit: -(8 + level). Seawalls/Wave Absorbers within 1 tile protect adjacent buildings (except at level 5).
+
+### 🔥 Earthquake
+
+| Level | Max destroyed | Cost/building | Resilience hit |
+|---|---|---|---|
+| 1 | 2 | -$800 | -15 |
+| 2 | 3 | -$1,000 | -20 |
+| 3 | 4 | -$1,200 | -25 |
+| 4 | 5 | -$1,500 | -30 |
+| 5 | 7 | -$2,000 | -40 |
+
+Happiness hit: -(6 + level). **Defenses reduce the number of destroyed buildings:**
+- Each Emergency Center: -1 destroyed
+- Every 2 Parks: -1 destroyed (open spaces = gathering areas)
+- Every 20 resilience: -1 destroyed (minimum 1 destroyed always)
+
+### ☀️ Drought (water shortage)
+
+| Level | Pop loss | Happiness hit | Money cost | Extra |
+|---|---|---|---|---|
+| 1 | 0-5 | -8 | -$400 | — |
+| 2 | 0-8 | -10 | -$700 | — |
+| 3 | 0-10 | -12 | -$1,000 | — |
+| 4 | 0-12 | -14 | -$1,300 | — |
+| 5 | 0-15 | -20 | -$2,000 | Extra -5 happiness |
+
+**Defense:** Each Park saves 1 population (max 5 saved). Green buildings don't directly block but contribute to happiness buffer.
+
+### 💨 Smog (air pollution spike)
+
+| Level | Pollution hit | Pop loss | Happiness hit |
+|---|---|---|---|
+| 1 | +15 to +20 | -1 to -3 | -1 to -3 |
+| 2 | +15 to +25 | -1 to -5 | -1 to -5 |
+| 3 | +15 to +30 | -1 to -6 | -1 to -6 |
+| 4 | +15 to +35 | -1 to -7 | -1 to -7 |
+| 5 | +15 to +40 | -1 to -8 | -1 to -8 |
+
+**Defense:** Each clean-energy/renewable building (renewableBoost > 0 or pollution < -3) reduces pollution hit by 2 and reduces pop/happiness loss.
 
 ---
 

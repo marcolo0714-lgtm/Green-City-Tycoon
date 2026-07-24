@@ -50,11 +50,29 @@ const GroundTile = memo(function GroundTile({ col, row, occupied, terrain }: {
   col: number; row: number; occupied: boolean; terrain: boolean;
 }) {
   const [x, , z] = tileToWorld(col, row);
-  const color = terrain ? '#b91c1c' : occupied ? '#c4a562' : '#b8954a';
+  const color = terrain ? '#8b4513' : occupied ? '#c4a562' : '#b8954a';
   return (
     <mesh position={[x, 0.005, z]} rotation={[-Math.PI / 2, 0, 0]}>
       <planeGeometry args={[TILE_SIZE, TILE_SIZE]} />
       <meshStandardMaterial color={color} side={THREE.DoubleSide} />
+    </mesh>
+  );
+});
+
+/* ---- destroyed tile blink ---- */
+const DestroyedOverlay = memo(function DestroyedOverlay({ col, row }: { col: number; row: number }) {
+  const ref = useRef<THREE.Mesh>(null);
+  useFrame(() => {
+    if (ref.current) {
+      const mat = ref.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.3 + Math.sin(Date.now() * 0.01) * 0.25;
+    }
+  });
+  const [x, , z] = tileToWorld(col, row);
+  return (
+    <mesh ref={ref} position={[x, 0.02, z]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[TILE_SIZE, TILE_SIZE]} />
+      <meshBasicMaterial color="#ef4444" transparent opacity={0.5} side={THREE.DoubleSide} />
     </mesh>
   );
 });
@@ -328,6 +346,7 @@ function GridContent() {
   const terrainMap = useGameStore((s) => s.terrainMap);
   const terrainClearing = useGameStore((s) => s.terrainClearing);
   const clearTerrain = useGameStore((s) => s.clearTerrain);
+  const destroyedTiles = useGameStore((s) => s.destroyedTiles);
   const justCompleted = useGameStore((s) => s.justCompleted);
   const clearJustCompleted = useGameStore((s) => s.clearJustCompleted);
   const gameSpeed = useGameStore((s) => s.gameSpeed);
@@ -461,6 +480,12 @@ function GridContent() {
           );
         });
       })()}
+
+      {/* Destroyed building overlays */}
+      {destroyedTiles.map((key) => {
+        const [r, c] = key.split(',').map(Number);
+        return <DestroyedOverlay key={`destroy-${key}`} col={c} row={r} />;
+      })}
 
       {tiles.map(({ ri, ci, building }) => {
         if (!building) {
