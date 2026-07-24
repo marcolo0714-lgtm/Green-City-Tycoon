@@ -6,7 +6,7 @@ export type Shape = 'house' | 'shop' | 'tower' | 'factory' | 'park' | 'green_roo
 
 export interface Building {
   id: string; name: string; shortName: string; emoji: string;
-  cost: number; category: Category;
+  cost: number; category: Category; description?: string;
   income: number; pollution: number; happinessBoost: number;
   resilienceBoost: number; renewableBoost: number;
   height: number; shape: Shape;
@@ -55,6 +55,8 @@ export interface GameState extends GameMeters {
   disasterLevels: Record<DisasterType, number>;
   meterDeltas: MeterDeltas; justCompleted: string[];
   destroyedTiles: string[];
+  completedObjectives: string[];
+  seenAdvisories: { id: string; message: string }[];
   selectBuilding: (building: Building | null) => void;
   placeBuilding: (row: number, col: number) => void;
   removeBuilding: (row: number, col: number) => void;
@@ -65,4 +67,7 @@ export interface GameState extends GameMeters {
   resetGame: () => void; continueGame: () => void;
   clearMeterDeltas: () => void; clearJustCompleted: () => void;
   toggleDevGrid: () => void;
+  cancelDisaster: () => void;
+  startDisaster: (type: DisasterType) => void;
+  adjustMeter: (meter: keyof GameMeters, amount: number) => void;
 }

@@ -23,10 +23,11 @@ export default function BuildingMenu() {
             {BUILDINGS.filter((b) => b.category === category).map((b) => {
               const isSelected = selectedBuilding?.id === b.id;
               const canAfford = money >= b.cost;
-              const stats: { value: number; cls: string; title: string; prefix: string }[] = [];
-              if (b.income) stats.push({ value: b.income, cls: 'income', title: 'Income/turn', prefix: '+' });
-              if (b.pollution < 0) stats.push({ value: b.pollution, cls: 'clean', title: 'Pollution reduction', prefix: '' });
-              if (b.pollution > 0) stats.push({ value: b.pollution, cls: 'dirty', title: 'Pollution generated', prefix: '+' });
+              const stats: { value: number; cls: string; title: string; prefix: string; emoji: string }[] = [];
+              if (b.income) stats.push({ value: b.income, cls: 'income', title: 'Income/day', prefix: '+', emoji: '💰' });
+              if (b.pollution < 0) stats.push({ value: b.pollution, cls: 'clean', title: 'Pollution reduction', prefix: '', emoji: '🌿' });
+              if (b.pollution > 0) stats.push({ value: b.pollution, cls: 'dirty', title: 'Pollution generated', prefix: '+', emoji: '🏭' });
+              if (b.happinessBoost !== 0) stats.push({ value: b.happinessBoost, cls: b.happinessBoost > 0 ? 'income' : 'dirty', title: 'Happiness effect', prefix: b.happinessBoost > 0 ? '+' : '', emoji: '😊' });
               return (
                 <button
                   key={b.id}
@@ -49,7 +50,7 @@ export default function BuildingMenu() {
                       <div className="building-stats">
                         {stats.map((s, i) => (
                           <span key={i} className={`building-stat ${s.cls}`} title={s.title}>
-                            {s.prefix}{s.value}
+                            {s.emoji} {s.prefix}{s.value}
                           </span>
                         ))}
                       </div>

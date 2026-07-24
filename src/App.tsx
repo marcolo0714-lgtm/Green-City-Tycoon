@@ -6,6 +6,7 @@ import MeterPanel from './components/MeterPanel';
 import SpeedControl from './components/SpeedControl';
 import NotificationOverlay from './components/NotificationOverlay';
 import TutorialOverlay from './components/TutorialOverlay';
+import ObjectivesPanel from './components/ObjectivesPanel';
 import { useGameStore } from './store/gameStore';
 import './App.css';
 
@@ -14,6 +15,7 @@ const TICK_INTERVAL_MS = 5000;
 function App() {
   const gameSpeed = useGameStore((s) => s.gameSpeed);
   const gameResult = useGameStore((s) => s.gameResult);
+  const disasterWarning = useGameStore((s) => s.disasterWarning);
   const tick = useGameStore((s) => s.tick);
   const resetGame = useGameStore((s) => s.resetGame);
   const intervalRef = useRef<number | null>(null);
@@ -47,7 +49,8 @@ function App() {
     }
   }, [resetGame]);
 
-  const speedClass = gameSpeed === 0 ? 'paused' : gameSpeed === 2 ? 'fast' : '';
+  const speedClass = (gameSpeed === 0 ? 'paused' : gameSpeed === 2 ? 'fast' : '')
+    + (disasterWarning ? ' disaster-warning' : '');
 
   return (
     <div className={`app ${speedClass}`}>
@@ -65,6 +68,7 @@ function App() {
         </div>
       </div>
       <NotificationOverlay />
+      <ObjectivesPanel />
       <TutorialOverlay />
     </div>
   );

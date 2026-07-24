@@ -282,17 +282,17 @@ const BuildingOnTile = memo(function BuildingOnTile({
             <div className="build-popup-title">{building.emoji} {building.name} Complete!</div>
             {building.income !== 0 && (
               <div className={`build-popup-stat ${building.income > 0 ? 'up' : 'down'}`}>
-                {building.income > 0 ? '+' : ''}{building.income} $/mo
+                💰 {building.income > 0 ? '+' : ''}{building.income} $/d
               </div>
             )}
             {building.pollution !== 0 && (
               <div className={`build-popup-stat ${building.pollution < 0 ? 'up' : 'down'}`}>
-                {building.pollution < 0 ? '' : '+'}{building.pollution} pollution
+                🏭 {building.pollution < 0 ? '' : '+'}{building.pollution} pollution
               </div>
             )}
             {building.happinessBoost !== 0 && (
               <div className={`build-popup-stat ${building.happinessBoost > 0 ? 'up' : 'down'}`}>
-                {building.happinessBoost > 0 ? '+' : ''}{building.happinessBoost} happiness
+                😊 {building.happinessBoost > 0 ? '+' : ''}{building.happinessBoost} happiness
               </div>
             )}
           </div>

@@ -8,6 +8,7 @@ export default function StatusBar({ onReset }: Props) {
   const tickCount = useGameStore((s) => s.tickCount);
   const gameSpeed = useGameStore((s) => s.gameSpeed);
   const gameResult = useGameStore((s) => s.gameResult);
+  const disasterWarning = useGameStore((s) => s.disasterWarning);
   const restartTutorial = useGameStore((s) => s.restartTutorial);
 
   const day = tickCount + 1;
@@ -17,14 +18,15 @@ export default function StatusBar({ onReset }: Props) {
   else if (money < 2000) moneyColor = '#f59e0b';
 
   const speedLabel = gameSpeed === 0 ? 'Paused' : gameSpeed === 2 ? '2×' : '1×';
+  const disasterBadge = disasterWarning ? ` 🔴${disasterWarning.daysLeft}d` : '';
 
   return (
     <div className="status-bar">
       <h1 className="game-title">Green City Tycoon</h1>
       <div className="status-info">
         <span className="tick-display">📅 Day {day}</span>
-        <span className="speed-badge" title={`Speed: ${speedLabel}`}>
-          {gameSpeed === 0 ? '⏸' : gameSpeed === 2 ? '⏩' : '▶'} {speedLabel}
+        <span className="speed-badge" title={`Speed: ${speedLabel}${disasterBadge}`}>
+          {gameSpeed === 0 ? '⏸' : gameSpeed === 2 ? '⏩' : '▶'} {speedLabel}{disasterBadge}
         </span>
         <div className="money-display" style={{ color: moneyColor }}>
           <span className="money-icon">💰</span>
