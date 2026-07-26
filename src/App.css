@@ -274,18 +274,23 @@ body {
 }
 
 .building-stat.income {
-  color: #22c55e;
-  background: #22c55e1a;
+  color: #eab308;
+  background: #eab3081a;
 }
 
 .building-stat.clean {
-  color: #06b6d4;
-  background: #06b6d41a;
+  color: #22c55e;
+  background: #22c55e1a;
 }
 
 .building-stat.dirty {
   color: #ef4444;
   background: #ef44441a;
+}
+
+.building-stat.happiness {
+  color: #06b6d4;
+  background: #06b6d41a;
 }
 
 .cancel-btn {

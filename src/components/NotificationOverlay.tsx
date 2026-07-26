@@ -17,28 +17,43 @@ export default function NotificationOverlay() {
   const disasterWarning = useGameStore((s) => s.disasterWarning);
   const disasterActive = useGameStore((s) => s.disasterActive);
   const seenAdvisories = useGameStore((s) => s.seenAdvisories);
-  const dismissedRef = useRef(new Set<number>());
+  const repeatableAdvisories = useGameStore((s) => s.repeatableAdvisories);
+  const dismissedRef = useRef(new Set<string>());
   const [, setTick] = useState(0);
 
-  // Stable auto-dismiss: create one-shot timers only for new indices, never cancel them
+  // Auto-dismiss one-time advisories after 10s
   useEffect(() => {
     let changed = false;
     for (let i = 0; i < seenAdvisories.length; i++) {
-      if (!dismissedRef.current.has(i)) {
-        const idx = i;
-        dismissedRef.current.add(idx);
+      const key = `once-${i}`;
+      if (!dismissedRef.current.has(key)) {
+        dismissedRef.current.add(key);
         setTimeout(() => {
-          dismissedRef.current.delete(idx);
+          dismissedRef.current.delete(key);
           setTick(n => n + 1);
-        }, 5000);
+        }, 10000);
+        changed = true;
+      }
+    }
+    // Auto-dismiss repeatable advisories after 10s
+    for (const ra of repeatableAdvisories) {
+      const key = `rep-${ra.id}`;
+      if (!dismissedRef.current.has(key)) {
+        dismissedRef.current.add(key);
+        setTimeout(() => {
+          dismissedRef.current.delete(key);
+          setTick(n => n + 1);
+        }, 10000);
         changed = true;
       }
     }
     if (changed) setTick(n => n + 1);
-  }, [seenAdvisories.length]);
+  }, [seenAdvisories, seenAdvisories.length, repeatableAdvisories, repeatableAdvisories.length]);
 
-  // Current visible advisories
-  const visibleItems = seenAdvisories.filter((_, i) => dismissedRef.current.has(i));
+  // Visible one-time (non-expired) + repeatable (condition still true)
+  const visibleOnce = seenAdvisories.filter((_, i) => dismissedRef.current.has(`once-${i}`));
+  const visibleRepeatable = repeatableAdvisories.filter(ra => dismissedRef.current.has(`rep-${ra.id}`));
+  const visibleItems = [...visibleOnce, ...visibleRepeatable];
 
   return (
     <>

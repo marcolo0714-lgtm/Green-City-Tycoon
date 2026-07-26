@@ -78,12 +78,12 @@ export default function MeterPanel() {
   return (
     <div className="meter-panel">
       <h3 className="meter-section-title">Meters</h3>
-      <MeterBar label="Money" value={money} max={100000} color="#f59e0b" icon="💰"
+      <MeterBar label="Money" value={money} max={100000} color="#eab308" icon="💰"
         suffix="" delta={deltas.money} deltaKey={`money-${tickCount}`}
         onAdj={(v) => adjustMeter('money', v)} adjStep={10000} />
-      <MeterBar label="Population" value={population} color="#3b82f6" icon="👥"
+      <MeterBar label="Population" value={population} max={1000} color="#3b82f6" icon="👥"
         suffix="" delta={deltas.population} deltaKey={`pop-${tickCount}`}
-        onAdj={(v) => adjustMeter('population', v)} adjStep={10} />
+        onAdj={(v) => adjustMeter('population', v)} adjStep={100} />
       <MeterBar label="Air Quality" value={100 - pollution}
         color={pollution > 50 ? '#ef4444' : '#22c55e'} icon="🌿"
         suffix="%" delta={deltas.pollution !== undefined ? -deltas.pollution : undefined} deltaKey={`aq-${tickCount}`}
@@ -91,7 +91,7 @@ export default function MeterPanel() {
       <MeterBar label="Happiness" value={happiness} color="#06b6d4" icon="😊"
         suffix="%" delta={deltas.happiness} deltaKey={`hap-${tickCount}`}
         onAdj={(v) => adjustMeter('happiness', v)} adjStep={10} />
-      <MeterBar label="Renewable" value={renewablePct} color="#fbbf24" icon="⚡"
+      <MeterBar label="Renewable" value={renewablePct} color="#f97316" icon="⚡"
         suffix="%" delta={deltas.renewablePct} deltaKey={`ren-${tickCount}`}
         onAdj={(v) => adjustMeter('renewablePct', v)} adjStep={10} />
       <MeterBar label="Resilience" value={resilience} color="#8b5cf6" icon="🛡️"

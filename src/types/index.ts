@@ -53,10 +53,12 @@ export interface GameState extends GameMeters {
   disasterWarning: DisasterWarning | null;
   disasterActive: { type: DisasterType; daysLeft: number } | null;
   disasterLevels: Record<DisasterType, number>;
+  resilienceDecay: number;
   meterDeltas: MeterDeltas; justCompleted: string[];
   destroyedTiles: string[];
   completedObjectives: string[];
   seenAdvisories: { id: string; message: string }[];
+  repeatableAdvisories: { id: string; message: string }[];
   selectBuilding: (building: Building | null) => void;
   placeBuilding: (row: number, col: number) => void;
   removeBuilding: (row: number, col: number) => void;

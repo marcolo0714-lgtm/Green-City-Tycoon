@@ -46,13 +46,15 @@ const RoadStrip = memo(function RoadStrip({ x0, z0, x1, z1, terrain }: {
 });
 
 /* ---- ground tile ---- */
-const GroundTile = memo(function GroundTile({ col, row, occupied, terrain }: {
+const GroundTile = memo(function GroundTile({ col, row, occupied, terrain, onTerrainClick }: {
   col: number; row: number; occupied: boolean; terrain: boolean;
+  onTerrainClick?: (e: ThreeEvent<MouseEvent>) => void;
 }) {
   const [x, , z] = tileToWorld(col, row);
   const color = terrain ? '#8b4513' : occupied ? '#c4a562' : '#b8954a';
   return (
-    <mesh position={[x, 0.005, z]} rotation={[-Math.PI / 2, 0, 0]}>
+    <mesh position={[x, 0.005, z]} rotation={[-Math.PI / 2, 0, 0]}
+      onClick={terrain ? onTerrainClick : undefined}>
       <planeGeometry args={[TILE_SIZE, TILE_SIZE]} />
       <meshStandardMaterial color={color} side={THREE.DoubleSide} />
     </mesh>
@@ -444,7 +446,8 @@ function GridContent() {
       {tiles.map(({ ri, ci, building }) => (
         <GroundTile key={`g-${ri}-${ci}`} col={ci} row={ri}
           occupied={!!building || !!terrainMap[`${ri},${ci}`]}
-          terrain={!!terrainMap[`${ri},${ci}`]} />
+          terrain={!!terrainMap[`${ri},${ci}`]}
+          onTerrainClick={terrainMap[`${ri},${ci}`] ? (e) => handleClearTerrain(e, ri, ci) : undefined} />
       ))}
 
       {/* Terrain pairs: group adjacent same-type tiles */}
@@ -489,6 +492,10 @@ function GridContent() {
 
       {tiles.map(({ ri, ci, building }) => {
         if (!building) {
+          // Don't show placeholder on terrain tiles
+          if (terrainMap[`${ri},${ci}`]) return null;
+          // Don't show placeholder for coastal-only on non-edge tiles
+          if (selectedBuilding?.coastalOnly && ri !== 0 && ri !== gridSize - 1 && ci !== 0 && ci !== gridSize - 1) return null;
           if (selectedBuilding && canAfford)
             return <PlaceholderTile key={`ph-${ri}-${ci}`} col={ci} row={ri} onClick={(e) => handlePlace(e, ri, ci)} label={selectedBuilding.name} />;
           return null;

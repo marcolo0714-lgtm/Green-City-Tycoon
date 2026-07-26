@@ -3,7 +3,7 @@ import type { Building, GameMeters, GameState, Grid, Warning, TerrainType, Terra
 import { BUILDINGS } from '../data/buildings';
 
 const GRID_SIZE = 8;
-const STARTING_MONEY = 600;
+const STARTING_MONEY = 1000;
 const BUILD_TICKS = 2;
 const TERRAIN_CLEAR_COST: Record<TerrainType, number> = { mountain: 8000, lake: 4000, forest: 2000 };
 const TERRAIN_CLEAR_TIME: Record<TerrainType, number> = { mountain: 6, lake: 4, forest: 2 };
@@ -89,21 +89,23 @@ function recalculateMeters(grid: Grid, currentMeters: GameMeters): GameMeters {
   const rawPollution = sumBuildingStat(grid, 'pollution');
   const pollution = Math.max(0, Math.min(100, rawPollution));
 
-  const happinessBase = 50;
+  const happinessBase = 40;
   const happinessFromBuildings = sumBuildingStat(grid, 'happinessBoost');
-  const happinessFromPollution = -pollution * 0.3;
+  const happinessFromPollution = -pollution * 0.5;
   const happiness = Math.max(0, Math.min(100, happinessBase + happinessFromBuildings + happinessFromPollution));
 
-  const renewable = total > 0 ? Math.min(100, (energyCount / total) * 60 + sumBuildingStat(grid, 'renewableBoost')) : 0;
+  const renewable = total > 0 ? Math.min(100, (energyCount / total) * 65 + sumBuildingStat(grid, 'renewableBoost')) : 0;
   const resilience = Math.min(100, sumBuildingStat(grid, 'resilienceBoost'));
 
-  const housingCapacity = ecoCount * 25 + greenCount * 5;
+  const housingCapacity = ecoCount * 250 + greenCount * 50;
   const popChange = housingCapacity > 0
-    ? currentMeters.happiness >= 30 ? (currentMeters.happiness / 100) * 2 : -0.5
-    : -1;
+    ? currentMeters.happiness >= 30 ? (currentMeters.happiness / 100) * 25 : -5
+    : -5;
   const rawPop = currentMeters.population + popChange;
+  // Allow up to 20% overcrowding, but cap population
+  const overcrowdCap = housingCapacity > 0 ? housingCapacity * 1.2 : 0;
   const newPopulation = housingCapacity > 0
-    ? Math.min(housingCapacity, rawPop)
+    ? Math.min(overcrowdCap, rawPop)
     : Math.max(0, rawPop);
 
   return {
@@ -127,7 +129,7 @@ function checkWarnings(meters: GameMeters, existing: Warning[]): Warning[] {
     if (thresh) next.push({ type, message: msg, countdown: prev ? prev.countdown - 1 : 5 });
   };
   add('money', 'City is nearly bankrupt!', meters.money < 200);
-  add('population', 'Citizens are leaving!', meters.population < 5);
+  add('population', 'Citizens are leaving!', meters.population < 50);
   add('pollution', 'Pollution is choking the city!', meters.pollution > 80);
   add('happiness', 'Citizens are rioting!', meters.happiness < 20);
   return next;
@@ -139,7 +141,7 @@ function checkGameOver(warnings: Warning[]): 'lose' | null {
 }
 
 function checkWin(meters: GameMeters): boolean {
-  return meters.money >= 100000 && meters.population >= 100 && meters.happiness >= 90
+  return meters.money >= 100000 && meters.population >= 1000 && meters.happiness >= 90
     && meters.resilience >= 90 && meters.renewablePct >= 80 && meters.pollution <= 10;
 }
 
@@ -254,31 +256,32 @@ const OBJECTIVES: Objective[] = [
   { id: 'survive_disaster', text: 'Survive a natural disaster', check: (s) => Object.values(s.disasterLevels).some(l => l > 1), requires: 'money_1k' },
 ];
 
-const ADVISORY_TRIGGERS: Array<{ id: string; check: (state: GameState, prev: GameMeters) => boolean; message: string }> = [
+const ADVISORY_TRIGGERS: Array<{ id: string; check: (state: GameState, prev: GameMeters) => boolean; message: string; canRepeat?: boolean }> = [
   { id: 'first_done', check: (s) => s.grid.some(r => r.some(c => c !== null)) && s.justCompleted.length > 0, message: 'Income is now active! Check your money meter.' },
-  { id: 'terrain_info', check: (s) => Object.keys(s.terrainClearing).length > 0, message: 'Clearing terrain costs money and time. Buildings can be placed after clearing completes.' },
   { id: 'tsunami_hint', check: (s) => s.disasterLevels.tsunami > 1, message: '🌊 Tsunami hit! Build Seawalls (edge tiles) and Wave Absorbers to protect your coast.' },
   { id: 'quake_hint', check: (s) => s.disasterLevels.earthquake > 1, message: '🔥 Earthquake struck! Emergency Centers, Parks, and Resilience reduce building destruction.' },
   { id: 'drought_hint', check: (s) => s.disasterLevels.drought > 1, message: '☀️ Drought! Parks save population. Build more green spaces.' },
   { id: 'smog_hint', check: (s) => s.disasterLevels.smog > 1, message: '💨 Smog! Build clean energy (Solar, Wind) and Recycling Centers.' },
-  { id: 'money_warn', check: (s) => s.warnings.some(w => w.type === 'money'), message: '⚠️ Money low! Build economic buildings (House, Shop) to earn income.' },
-  { id: 'pop_warn', check: (s) => s.warnings.some(w => w.type === 'population'), message: '⚠️ Population dropping! Provide more housing — build Houses or Shops.' },
-  { id: 'pollution_warn', check: (s) => s.warnings.some(w => w.type === 'pollution'), message: '⚠️ Pollution critical! Build Parks, Green Roofs, or Renewable energy.' },
-  { id: 'happiness_warn', check: (s) => s.warnings.some(w => w.type === 'happiness'), message: '⚠️ Citizens unhappy! Add Parks, Green Roofs, and reduce pollution.' },
+  { id: 'money_warn', check: (s) => s.warnings.some(w => w.type === 'money'), message: '⚠️ Money low! Build economic buildings (House, Shop) to earn income.', canRepeat: true },
+  { id: 'pop_warn', check: (s) => s.warnings.some(w => w.type === 'population'), message: '⚠️ Population dropping! Provide more housing — build Houses or Shops.', canRepeat: true },
+  { id: 'pollution_warn', check: (s) => s.warnings.some(w => w.type === 'pollution'), message: '⚠️ Pollution critical! Build Parks, Green Roofs, or Renewable energy.', canRepeat: true },
+  { id: 'happiness_warn', check: (s) => s.warnings.some(w => w.type === 'happiness'), message: '⚠️ Citizens unhappy! Add Parks, Green Roofs, and reduce pollution.', canRepeat: true },
+  { id: 'overcrowding', check: (s) => { const ec = countBuildings(s.grid, 'economic'); const gc = countBuildings(s.grid, 'green'); const hc = ec * 250 + gc * 50; return hc > 0 && s.population > hc; }, message: '🏘️ Overcrowding! Build more Houses or Shops to provide adequate housing.', canRepeat: true },
 ];
 
 export const useGameStore = create<GameState>((set) => ({
   grid: createEmptyGrid(GRID_SIZE),
   gridSize: GRID_SIZE,
   money: STARTING_MONEY,
-  population: 10, pollution: 0, happiness: 50, renewablePct: 0, resilience: 0,
+      population: 100, pollution: 0, happiness: 50, renewablePct: 0, resilience: 0,
   selectedBuilding: null, tickCount: 0, gameSpeed: 1,
   warnings: [], gameResult: null, tutorialComplete: false,
   constructionMap: {}, terrainMap: generateTerrain(), terrainClearing: {},
   disasterWarning: null, disasterActive: null,
   disasterLevels: { tsunami: 1, earthquake: 1, drought: 1, smog: 1 },
+  resilienceDecay: 0,
   meterDeltas: {}, justCompleted: [], destroyedTiles: [],
-  completedObjectives: [], seenAdvisories: [] as { id: string; message: string }[],
+  completedObjectives: [], seenAdvisories: [] as { id: string; message: string }[], repeatableAdvisories: [],
 
   selectBuilding: (b) => set({ selectedBuilding: b }),
 
@@ -318,11 +321,16 @@ export const useGameStore = create<GameState>((set) => ({
     const t = state.terrainMap[key];
     if (!t || state.gameResult) return state;
     if (state.terrainClearing[key] > 0) return state;
+    // Fire advisory on first terrain click regardless of affordability
+    const seenAdvisories = state.seenAdvisories.some(a => a.id === 'terrain_info')
+      ? state.seenAdvisories
+      : [...state.seenAdvisories, { id: 'terrain_info', message: 'Terrain can be cleared to free up more buildable land.' }];
     const cost = TERRAIN_CLEAR_COST[t.type];
-    if (state.money < cost) return state;
+    if (state.money < cost) return { seenAdvisories };
     return {
       money: state.money - cost,
       terrainClearing: { ...state.terrainClearing, [key]: TERRAIN_CLEAR_TIME[t.type] },
+      seenAdvisories,
     };
   }),
 
@@ -398,6 +406,22 @@ export const useGameStore = create<GameState>((set) => ({
       resilience: (extraMeters.resilience ?? state.resilience),
     });
 
+    // Resilience decay: -1 every 3 days
+    let resilienceDecay = (state.resilienceDecay ?? 0) + 1;
+    if (resilienceDecay >= 3) {
+      meters.resilience = Math.max(0, meters.resilience - 1);
+      resilienceDecay = 0;
+    }
+
+    // Overcrowding happiness penalty: -2 per 10% over housing capacity
+    const ecoC = countBuildings(active, 'economic');
+    const greenC = countBuildings(active, 'green');
+    const hCap = ecoC * 250 + greenC * 50;
+    if (hCap > 0 && meters.population > hCap) {
+      const overPct = Math.floor((meters.population - hCap) / hCap * 10);
+      meters.happiness = Math.max(0, meters.happiness - overPct * 2);
+    }
+
     const warnings = checkWarnings(meters, state.warnings);
     const gameOver = checkGameOver(warnings);
     const won = gameOver ? false : checkWin(meters);
@@ -411,11 +435,16 @@ export const useGameStore = create<GameState>((set) => ({
       if (obj.check(postTickState as GameState)) completedObjectives.push(obj.id);
     }
 
-    // Check advisories (first time only)
+    // Check advisories (one-time: never repeat; repeatable: shows when condition is true)
     const seenAdvisories = state.seenAdvisories.map(a => ({...a}));
+    const repeatableAdvisories: { id: string; message: string }[] = [];
     for (const adv of ADVISORY_TRIGGERS) {
-      if (seenAdvisories.some(a => a.id === adv.id)) continue;
-      if (adv.check(postTickState as GameState, state)) seenAdvisories.push({ id: adv.id, message: adv.message });
+      if (adv.canRepeat) {
+        if (adv.check(postTickState as GameState, state)) repeatableAdvisories.push({ id: adv.id, message: adv.message });
+      } else {
+        if (!seenAdvisories.some(a => a.id === adv.id) && adv.check(postTickState as GameState, state))
+          seenAdvisories.push({ id: adv.id, message: adv.message });
+      }
     }
 
     return {
@@ -424,7 +453,9 @@ export const useGameStore = create<GameState>((set) => ({
       constructionMap: newCMap, warnings,
       disasterWarning, disasterActive,
       disasterLevels, destroyedTiles,
+      resilienceDecay,
       completedObjectives, seenAdvisories,
+      repeatableAdvisories,
       gameResult: gameOver || (won ? 'win' : null),
       meterDeltas: {
         money: meters.money - state.money,
@@ -482,14 +513,15 @@ export const useGameStore = create<GameState>((set) => ({
 
   resetGame: () => set({
     grid: createEmptyGrid(GRID_SIZE), money: STARTING_MONEY,
-    population: 10, pollution: 0, happiness: 50, renewablePct: 0, resilience: 0,
+  population: 100, pollution: 0, happiness: 50, renewablePct: 0, resilience: 0,
     selectedBuilding: null, tickCount: 0, gameSpeed: 0,
     warnings: [], gameResult: null, tutorialComplete: false,
     constructionMap: {}, terrainMap: generateTerrain(), terrainClearing: {},
     disasterWarning: null, disasterActive: null,
     disasterLevels: { tsunami: 1, earthquake: 1, drought: 1, smog: 1 },
+    resilienceDecay: 0,
     meterDeltas: {}, justCompleted: [], destroyedTiles: [],
-  completedObjectives: [], seenAdvisories: [] as { id: string; message: string }[],
+  completedObjectives: [], seenAdvisories: [] as { id: string; message: string }[], repeatableAdvisories: [],
   }),
 
   continueGame: () => set({ gameResult: null, gameSpeed: 1 }),

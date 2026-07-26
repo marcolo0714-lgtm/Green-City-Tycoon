@@ -31,13 +31,7 @@ const STEPS = [
   {
     key: 'meters',
     title: 'Watch the Meters',
-    text: 'The right panel shows Money, Population, Happiness, Air Quality, Renewable %, and Resilience. Keep them all healthy to win!',
-    waitFor: null,
-  },
-  {
-    key: 'win',
-    title: 'Win Condition',
-    text: 'Reach $2000, 100 population, 90%+ happiness, 90%+ resilience, 80%+ renewable, and 90%+ air quality all at once. Good luck, Mayor!',
+    text: 'The right panel shows all 6 meter bars — Money, Population, Happiness, Air Quality, Renewable %, and Resilience. Fill them all and go green to win!',
     waitFor: null,
   },
 ];
@@ -56,6 +50,16 @@ export default function TutorialOverlay() {
   const originalSpeed = useRef(gameSpeed);
   const setGameSpeedRef = useRef(setGameSpeed);
   setGameSpeedRef.current = setGameSpeed;
+  const prevComplete = useRef(tutorialComplete);
+
+  // Reset step when tutorial is reopened (e.g. after restart)
+  useEffect(() => {
+    if (prevComplete.current && !tutorialComplete) {
+      setStep(0);
+      setHadSelection(false);
+    }
+    prevComplete.current = tutorialComplete;
+  }, [tutorialComplete]);
 
   // Pause game during tutorial, restore on unmount
   useEffect(() => {

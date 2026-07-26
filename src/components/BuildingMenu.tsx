@@ -27,7 +27,7 @@ export default function BuildingMenu() {
               if (b.income) stats.push({ value: b.income, cls: 'income', title: 'Income/day', prefix: '+', emoji: '💰' });
               if (b.pollution < 0) stats.push({ value: b.pollution, cls: 'clean', title: 'Pollution reduction', prefix: '', emoji: '🌿' });
               if (b.pollution > 0) stats.push({ value: b.pollution, cls: 'dirty', title: 'Pollution generated', prefix: '+', emoji: '🏭' });
-              if (b.happinessBoost !== 0) stats.push({ value: b.happinessBoost, cls: b.happinessBoost > 0 ? 'income' : 'dirty', title: 'Happiness effect', prefix: b.happinessBoost > 0 ? '+' : '', emoji: '😊' });
+              if (b.happinessBoost !== 0) stats.push({ value: b.happinessBoost, cls: b.happinessBoost > 0 ? 'happiness' : 'dirty', title: 'Happiness effect', prefix: b.happinessBoost > 0 ? '+' : '', emoji: '😊' });
               return (
                 <button
                   key={b.id}
