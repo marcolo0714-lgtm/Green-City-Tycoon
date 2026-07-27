@@ -275,11 +275,13 @@ export const useGameStore = create<GameState>((set) => ({
   money: STARTING_MONEY,
       population: 100, pollution: 0, happiness: 50, renewablePct: 0, resilience: 0,
   selectedBuilding: null, tickCount: 0, gameSpeed: 1,
-  warnings: [], gameResult: null, tutorialComplete: false,
+  warnings: [], gameResult: null, tutorialComplete: false, hasWon: false, tutorialReplay: false, tutorialStep: 0,
   constructionMap: {}, terrainMap: generateTerrain(), terrainClearing: {},
+  pendingRemoval: null,
   disasterWarning: null, disasterActive: null,
   disasterLevels: { tsunami: 1, earthquake: 1, drought: 1, smog: 1 },
   resilienceDecay: 0,
+  meterOffsets: { pollution: 0, happiness: 0, renewablePct: 0, resilience: 0 },
   meterDeltas: {}, justCompleted: [], destroyedTiles: [],
   completedObjectives: [], seenAdvisories: [] as { id: string; message: string }[], repeatableAdvisories: [],
 
@@ -302,18 +304,25 @@ export const useGameStore = create<GameState>((set) => ({
       pollution: state.pollution, happiness: state.happiness,
       renewablePct: state.renewablePct, resilience: state.resilience,
     });
-    return { grid: newGrid, constructionMap: newCMap, selectedBuilding: null, ...m };
+    return { grid: newGrid, constructionMap: newCMap, ...m };
   }),
 
   removeBuilding: (row, col) => set((state) => {
     if (state.grid[row][col] === null || state.gameResult) return state;
+    const building = state.grid[row][col];
+    const refund = Math.floor(building.cost * 0.2);
     const newGrid = state.grid.map((r, ri) => r.map((c, ci) => ri === row && ci === col ? null : c));
     const newCMap = { ...state.constructionMap }; delete newCMap[`${row},${col}`];
     const active = gridWithoutConstruction(newGrid, newCMap);
-    return { grid: newGrid, constructionMap: newCMap, ...recalculateGrid(active, {
+    const meters = recalculateMeters(active, {
       money: state.money, population: state.population, pollution: state.pollution,
       happiness: state.happiness, renewablePct: state.renewablePct, resilience: state.resilience,
-    }) };
+    });
+    return { grid: newGrid, constructionMap: newCMap,
+      population: meters.population, pollution: meters.pollution,
+      happiness: meters.happiness, renewablePct: meters.renewablePct, resilience: meters.resilience,
+      money: state.money + refund,
+    };
   }),
 
   clearTerrain: (row, col) => set((state) => {
@@ -422,9 +431,15 @@ export const useGameStore = create<GameState>((set) => ({
       meters.happiness = Math.max(0, meters.happiness - overPct * 2);
     }
 
+    // Apply persistent manual meter offsets (for pollution, happiness, renewable, resilience)
+    meters.pollution = Math.max(0, Math.min(100, meters.pollution + (state.meterOffsets?.pollution || 0)));
+    meters.happiness = Math.max(0, Math.min(100, meters.happiness + (state.meterOffsets?.happiness || 0)));
+    meters.renewablePct = Math.max(0, Math.min(100, meters.renewablePct + (state.meterOffsets?.renewablePct || 0)));
+    meters.resilience = Math.max(0, Math.min(100, meters.resilience + (state.meterOffsets?.resilience || 0)));
+
     const warnings = checkWarnings(meters, state.warnings);
     const gameOver = checkGameOver(warnings);
-    const won = gameOver ? false : checkWin(meters);
+    const won = gameOver ? false : state.hasWon ? false : checkWin(meters);
 
     // Check objectives
     const completedObjectives = [...state.completedObjectives];
@@ -457,6 +472,7 @@ export const useGameStore = create<GameState>((set) => ({
       completedObjectives, seenAdvisories,
       repeatableAdvisories,
       gameResult: gameOver || (won ? 'win' : null),
+      hasWon: state.hasWon || (won ? true : false),
       meterDeltas: {
         money: meters.money - state.money,
         population: +(meters.population - state.population).toFixed(0),
@@ -474,8 +490,9 @@ export const useGameStore = create<GameState>((set) => ({
   clearMeterDeltas: () => set({ meterDeltas: {} }),
   clearJustCompleted: () => set({ justCompleted: [] }),
 
-  completeTutorial: () => set({ tutorialComplete: true, gameSpeed: 1 }),
-  restartTutorial: () => set({ tutorialComplete: false, gameSpeed: 0 }),
+  completeTutorial: () => set({ tutorialComplete: true, gameSpeed: 1, tutorialReplay: false, tutorialStep: 0 }),
+  restartTutorial: () => set({ tutorialComplete: false, gameSpeed: 0, tutorialReplay: true, tutorialStep: 0 }),
+  setTutorialStep: (step: number) => set({ tutorialStep: step }),
   toggleDevGrid: () =>
     set((state) => {
       const hasB = state.grid.some(r => r.some(c => c !== null));
@@ -505,24 +522,53 @@ export const useGameStore = create<GameState>((set) => ({
   adjustMeter: (meter, amount) =>
     set((state) => {
       const current = state[meter] as number;
-      const clamped = meter === 'money' ? Math.max(0, current + amount)
-        : meter === 'population' ? Math.max(0, current + amount)
-        : Math.max(0, Math.min(100, current + amount));
+      const clamped = Math.max(0, Math.min(meter === 'money' ? 999999 : meter === 'population' ? 999999 : 100, current + amount));
+      // For formula-computed meters, store the offset so it persists across ticks
+      if (meter === 'pollution' || meter === 'happiness' || meter === 'renewablePct' || meter === 'resilience') {
+        const offsets = { ...state.meterOffsets, [meter]: (state.meterOffsets[meter] || 0) + amount };
+        return { [meter]: clamped, meterOffsets: offsets } as Partial<GameState>;
+      }
       return { [meter]: clamped } as Partial<GameState>;
     }),
+
+  confirmRemoval: () =>
+    set((state) => {
+      const p = state.pendingRemoval;
+      if (!p) return state;
+      const building = state.grid[p.row][p.col];
+      if (!building) return { pendingRemoval: null };
+      const refund = Math.floor(building.cost * 0.2);
+      const newGrid = state.grid.map((r, ri) => r.map((c, ci) => ri === p.row && ci === p.col ? null : c));
+      const newCMap = { ...state.constructionMap }; delete newCMap[`${p.row},${p.col}`];
+      const active = gridWithoutConstruction(newGrid, newCMap);
+      // Recalculate non-money meters; money is just refund minus lost income
+      const meters = recalculateMeters(active, {
+        money: state.money, population: state.population, pollution: state.pollution,
+        happiness: state.happiness, renewablePct: state.renewablePct, resilience: state.resilience,
+      });
+      return { grid: newGrid, constructionMap: newCMap, pendingRemoval: null,
+        population: meters.population, pollution: meters.pollution,
+        happiness: meters.happiness, renewablePct: meters.renewablePct, resilience: meters.resilience,
+        money: state.money + refund,
+      };
+    }),
+
+  cancelRemoval: () => set({ pendingRemoval: null }),
 
   resetGame: () => set({
     grid: createEmptyGrid(GRID_SIZE), money: STARTING_MONEY,
   population: 100, pollution: 0, happiness: 50, renewablePct: 0, resilience: 0,
     selectedBuilding: null, tickCount: 0, gameSpeed: 0,
-    warnings: [], gameResult: null, tutorialComplete: false,
-    constructionMap: {}, terrainMap: generateTerrain(), terrainClearing: {},
+  warnings: [], gameResult: null, tutorialComplete: false, hasWon: false, tutorialReplay: false, tutorialStep: 0,
+  constructionMap: {}, terrainMap: generateTerrain(), terrainClearing: {},
+  pendingRemoval: null,
     disasterWarning: null, disasterActive: null,
     disasterLevels: { tsunami: 1, earthquake: 1, drought: 1, smog: 1 },
     resilienceDecay: 0,
+    meterOffsets: { pollution: 0, happiness: 0, renewablePct: 0, resilience: 0 },
     meterDeltas: {}, justCompleted: [], destroyedTiles: [],
   completedObjectives: [], seenAdvisories: [] as { id: string; message: string }[], repeatableAdvisories: [],
   }),
 
-  continueGame: () => set({ gameResult: null, gameSpeed: 1 }),
+  continueGame: () => set({ gameResult: null, gameSpeed: 1, hasWon: true }),
 }));

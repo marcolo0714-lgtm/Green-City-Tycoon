@@ -45,15 +45,20 @@ export interface GameState extends GameMeters {
   grid: Grid; gridSize: number;
   selectedBuilding: Building | null;
   tickCount: number; gameSpeed: GameSpeed;
-  warnings: Warning[]; gameResult: GameResult;
+  warnings: Warning[];   gameResult: GameResult;
   tutorialComplete: boolean;
+  hasWon: boolean;
+  tutorialReplay: boolean;
+  tutorialStep: number;
   constructionMap: Record<string, number>;
+  pendingRemoval: { row: number; col: number; name: string; emoji: string; refund: number } | null;
   terrainMap: Record<string, TerrainTile>;
   terrainClearing: Record<string, number>;
   disasterWarning: DisasterWarning | null;
   disasterActive: { type: DisasterType; daysLeft: number } | null;
   disasterLevels: Record<DisasterType, number>;
   resilienceDecay: number;
+  meterOffsets: { pollution: number; happiness: number; renewablePct: number; resilience: number };
   meterDeltas: MeterDeltas; justCompleted: string[];
   destroyedTiles: string[];
   completedObjectives: string[];
@@ -65,11 +70,14 @@ export interface GameState extends GameMeters {
   clearTerrain: (row: number, col: number) => void;
   tick: () => void; setGameSpeed: (speed: GameSpeed) => void;
   dismissWarning: (type: Warning['type']) => void;
-  completeTutorial: () => void; restartTutorial: () => void;
+  completeTutorial: () => void;   restartTutorial: () => void;
+  setTutorialStep: (step: number) => void;
   resetGame: () => void; continueGame: () => void;
   clearMeterDeltas: () => void; clearJustCompleted: () => void;
   toggleDevGrid: () => void;
   cancelDisaster: () => void;
   startDisaster: (type: DisasterType) => void;
   adjustMeter: (meter: keyof GameMeters, amount: number) => void;
+  confirmRemoval: () => void;
+  cancelRemoval: () => void;
 }

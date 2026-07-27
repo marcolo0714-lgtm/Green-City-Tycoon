@@ -5,6 +5,12 @@ export default function BuildingMenu() {
   const selectedBuilding = useGameStore((s) => s.selectedBuilding);
   const selectBuilding = useGameStore((s) => s.selectBuilding);
   const money = useGameStore((s) => s.money);
+  const tutorialComplete = useGameStore((s) => s.tutorialComplete);
+  const tutorialStep = useGameStore((s) => s.tutorialStep);
+  const tutorialReplay = useGameStore((s) => s.tutorialReplay);
+
+  // Block building selection before tutorial step 1 (first play only)
+  const tutorialBlocksSelection = !tutorialComplete && !tutorialReplay && tutorialStep < 1;
 
   const categories = [...new Set(BUILDINGS.map((b) => b.category))];
 
@@ -37,7 +43,7 @@ export default function BuildingMenu() {
                     borderColor: isSelected ? CATEGORY_COLORS[b.category] : 'transparent',
                     backgroundColor: isSelected ? CATEGORY_COLORS[b.category] + '22' : 'transparent',
                   }}
-                  disabled={!canAfford}
+                  disabled={!canAfford || tutorialBlocksSelection}
                   title={!canAfford ? `Need $${b.cost - money} more` : `Place ${b.name} — $${b.cost}`}
                 >
                   <span className="building-emoji">{b.emoji}</span>

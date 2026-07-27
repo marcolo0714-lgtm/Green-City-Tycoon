@@ -43,6 +43,16 @@ export default function TutorialOverlay() {
   const grid = useGameStore((s) => s.grid);
   const gameSpeed = useGameStore((s) => s.gameSpeed);
   const setGameSpeed = useGameStore((s) => s.setGameSpeed);
+  const tutorialReplay = useGameStore((s) => s.tutorialReplay);
+  const setTutorialStep = useGameStore((s) => s.setTutorialStep);
+
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 900px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const [step, setStep] = useState(0);
   const [hadSelection, setHadSelection] = useState(false);
@@ -51,6 +61,9 @@ export default function TutorialOverlay() {
   const setGameSpeedRef = useRef(setGameSpeed);
   setGameSpeedRef.current = setGameSpeed;
   const prevComplete = useRef(tutorialComplete);
+
+  // Sync step to store so BuildingMenu can read it
+  useEffect(() => { setTutorialStep(step); }, [step, setTutorialStep]);
 
   // Reset step when tutorial is reopened (e.g. after restart)
   useEffect(() => {
@@ -61,19 +74,18 @@ export default function TutorialOverlay() {
     prevComplete.current = tutorialComplete;
   }, [tutorialComplete]);
 
-  // Pause game during tutorial, restore on unmount
+  // Pause game while tutorial is showing, restore when completes
   useEffect(() => {
-    const prevSpeed = originalSpeed.current;
-    const setSpeed = setGameSpeedRef.current;
-    if (prevSpeed !== 0) {
-      setSpeed(0);
+    if (tutorialComplete) return;
+    const speed = useGameStore.getState().gameSpeed;
+    if (speed !== 0) {
+      originalSpeed.current = speed;
+      setGameSpeedRef.current(0);
     }
     return () => {
-      if (prevSpeed !== 0) {
-        setSpeed(prevSpeed);
-      }
+      if (originalSpeed.current !== 0) setGameSpeedRef.current(originalSpeed.current);
     };
-  }, []);
+  }, [tutorialComplete]);
 
   const occupiedCount = grid.flat().filter(Boolean).length;
   const s = STEPS[step];
@@ -101,17 +113,23 @@ export default function TutorialOverlay() {
     <div className="tutorial-overlay">
       <div className="tutorial-card">
         <h3>{s.title}</h3>
-        <p>{s.text}</p>
+        <p>
+          {s.key === 'select' && isMobile
+            ? 'Tap the 🏗️ button on the bottom toolbar to open the building menu, then tap any affordable building.'
+            : s.key === 'meters' && isMobile
+            ? 'Tap the 📊 button on the bottom toolbar to open the meters panel. Fill all 6 bars and go green to win!'
+            : s.text}
+        </p>
         {showHint && s.hint && (
           <p className="tutorial-hint">{s.hint}</p>
         )}
         <div className="tutorial-buttons">
-          {step > 0 && !s.waitFor && (
+          {step > 0 && (!s.waitFor || tutorialReplay) && (
             <button className="tutorial-btn" onClick={() => setStep(step - 1)}>Back</button>
           )}
           {isLast ? (
             <button className="tutorial-btn primary" onClick={completeTutorial}>Start Playing</button>
-          ) : !s.waitFor ? (
+          ) : (!s.waitFor || tutorialReplay) ? (
             <button className="tutorial-btn primary" onClick={() => setStep(step + 1)}>Next</button>
           ) : null}
           <button className="tutorial-btn skip" onClick={completeTutorial}>Skip Tutorial</button>

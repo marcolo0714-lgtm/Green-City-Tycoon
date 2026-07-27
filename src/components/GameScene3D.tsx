@@ -46,15 +46,15 @@ const RoadStrip = memo(function RoadStrip({ x0, z0, x1, z1, terrain }: {
 });
 
 /* ---- ground tile ---- */
-const GroundTile = memo(function GroundTile({ col, row, occupied, terrain, onTerrainClick }: {
+const GroundTile = memo(function GroundTile({ col, row, occupied, terrain, onClick }: {
   col: number; row: number; occupied: boolean; terrain: boolean;
-  onTerrainClick?: (e: ThreeEvent<MouseEvent>) => void;
+  onClick?: (e: ThreeEvent<MouseEvent>) => void;
 }) {
   const [x, , z] = tileToWorld(col, row);
   const color = terrain ? '#8b4513' : occupied ? '#c4a562' : '#b8954a';
   return (
     <mesh position={[x, 0.005, z]} rotation={[-Math.PI / 2, 0, 0]}
-      onClick={terrain ? onTerrainClick : undefined}>
+      onClick={onClick}>
       <planeGeometry args={[TILE_SIZE, TILE_SIZE]} />
       <meshStandardMaterial color={color} side={THREE.DoubleSide} />
     </mesh>
@@ -355,7 +355,6 @@ function GridContent() {
   const gameSpeedRef = useRef(gameSpeed);
   gameSpeedRef.current = gameSpeed;
   const placeBuilding = useGameStore((s) => s.placeBuilding);
-  const removeBuilding = useGameStore((s) => s.removeBuilding);
 
   const tiles = useMemo(() => {
     const arr: Array<{ ri: number; ci: number; building: Building | null }> = [];
@@ -386,14 +385,20 @@ function GridContent() {
     return segs;
   }, [gridSize, terrainMap]);
 
-  const peopleCount = Math.min(Math.max(Math.round(population / 3), 2), 40);
+  const peopleCount = Math.min(Math.max(Math.round(population / 20), 2), 50);
+  const peopleRef = useRef<Array<{ sx: number; sz: number; ex: number; ez: number; speed: number }>>([]);
+
+  // Stable walkers: persist existing ones, add/remove when count changes
   const people = useMemo(() => {
-    if (roads.length === 0) return [];
-    return Array.from({ length: peopleCount }, () => {
+    if (roads.length === 0) { peopleRef.current = []; return []; }
+    const current = peopleRef.current;
+    while (current.length < peopleCount) {
       const r = roads[Math.floor(Math.random() * roads.length)];
-      return { sx: r.x0, sz: r.z0, ex: r.x1, ez: r.z1, speed: 0.06 + Math.random() * 0.1 };
-    });
-  }, [roads, peopleCount]);
+      current.push({ sx: r.x0, sz: r.z0, ex: r.x1, ez: r.z1, speed: 0.06 + Math.random() * 0.1 });
+    }
+    if (current.length > peopleCount) current.length = peopleCount;
+    return [...current];
+  }, [peopleCount, roads]);
 
   const handlePlace = useCallback((_e: ThreeEvent<MouseEvent>, ri: number, ci: number) => {
     _e.stopPropagation();
@@ -407,8 +412,17 @@ function GridContent() {
 
   const handleRemove = useCallback((_e: ThreeEvent<MouseEvent>, ri: number, ci: number) => {
     _e.stopPropagation();
-    removeBuilding(ri, ci);
-  }, [removeBuilding]);
+    const building = grid[ri][ci];
+    if (building) {
+      useGameStore.setState({
+        pendingRemoval: {
+          row: ri, col: ci,
+          name: building.name, emoji: building.emoji,
+          refund: Math.floor(building.cost * 0.2),
+        },
+      });
+    }
+  }, [grid]);
 
   useEffect(() => {
     if (justCompleted.length > 0 && gameSpeedRef.current !== 0) {
@@ -443,12 +457,20 @@ function GridContent() {
         <WalkingPerson key={`wp-${i}`} sx={p.sx} sz={p.sz} ex={p.ex} ez={p.ez} speed={p.speed} />
       ))}
 
-      {tiles.map(({ ri, ci, building }) => (
-        <GroundTile key={`g-${ri}-${ci}`} col={ci} row={ri}
-          occupied={!!building || !!terrainMap[`${ri},${ci}`]}
-          terrain={!!terrainMap[`${ri},${ci}`]}
-          onTerrainClick={terrainMap[`${ri},${ci}`] ? (e) => handleClearTerrain(e, ri, ci) : undefined} />
-      ))}
+      {tiles.map(({ ri, ci, building }) => {
+        const isTerrain = !!terrainMap[`${ri},${ci}`];
+        const canPlace = !building && !isTerrain && selectedBuilding && canAfford;
+        const isTileCoastal = ri === 0 || ri === gridSize - 1 || ci === 0 || ci === gridSize - 1;
+        const canPlaceCoastal = canPlace && selectedBuilding?.coastalOnly && !isTileCoastal ? false : canPlace;
+        return (
+          <GroundTile key={`g-${ri}-${ci}`} col={ci} row={ri}
+            occupied={!!building || isTerrain}
+            terrain={isTerrain}
+            onClick={isTerrain ? (e) => handleClearTerrain(e, ri, ci)
+              : canPlaceCoastal ? (e) => handlePlace(e, ri, ci)
+              : undefined} />
+        );
+      })}
 
       {/* Terrain pairs: group adjacent same-type tiles */}
       {(() => {
@@ -514,10 +536,10 @@ export default function GameScene3D() {
   const gridSize = useGameStore((s) => s.gridSize);
   const gridCenter = (gridSize - 1) * SPACING * 0.5;
   return (
-    <div style={{ width: '100%', height: '100%' }}>
-      <Canvas camera={{ position: [gridCenter * 2, gridCenter, gridCenter * 2], fov: 35, near: 0.1, far: 120 }}
+    <div style={{ width: '100%', height: '100%', position: 'relative', zIndex: 0 }}>
+      <Canvas camera={{ position: [gridCenter * 2.8, gridCenter * 1.4, gridCenter * 2.8], fov: 35, near: 0.1, far: 120 }}
         gl={{ localClippingEnabled: true }}
-        style={{ background: 'radial-gradient(ellipse at center, #0e7490 0%, #155e75 30%, #1e3a5f 60%, #0f172a 100%)' }}>
+        style={{ background: 'radial-gradient(ellipse at center, #0e7490 0%, #155e75 30%, #1e3a5f 60%, #0f172a 100%)', position: 'absolute', inset: 0 }}>
         <Suspense fallback={null}>
           <GridContent />
         </Suspense>

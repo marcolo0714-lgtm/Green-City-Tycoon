@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from 'react';
 export default function NotificationOverlay() {
   const warnings = useGameStore((s) => s.warnings);
   const gameResult = useGameStore((s) => s.gameResult);
-  const dismissWarning = useGameStore((s) => s.dismissWarning);
   const resetGame = useGameStore((s) => s.resetGame);
   const continueGame = useGameStore((s) => s.continueGame);
   const pollution = useGameStore((s) => s.pollution);
@@ -18,30 +17,32 @@ export default function NotificationOverlay() {
   const disasterActive = useGameStore((s) => s.disasterActive);
   const seenAdvisories = useGameStore((s) => s.seenAdvisories);
   const repeatableAdvisories = useGameStore((s) => s.repeatableAdvisories);
-  const dismissedRef = useRef(new Set<string>());
+  const activeRef = useRef(new Set<string>()); // currently visible keys
+  const doneRef = useRef(new Set<string>());   // permanently dismissed (one-time only)
   const [, setTick] = useState(0);
 
-  // Auto-dismiss one-time advisories after 10s
+  // Show new one-time advisories, hide after 10s, never show again
   useEffect(() => {
     let changed = false;
     for (let i = 0; i < seenAdvisories.length; i++) {
       const key = `once-${i}`;
-      if (!dismissedRef.current.has(key)) {
-        dismissedRef.current.add(key);
+      if (!doneRef.current.has(key) && !activeRef.current.has(key)) {
+        activeRef.current.add(key);
         setTimeout(() => {
-          dismissedRef.current.delete(key);
+          activeRef.current.delete(key);
+          doneRef.current.add(key); // permanent dismiss
           setTick(n => n + 1);
         }, 10000);
         changed = true;
       }
     }
-    // Auto-dismiss repeatable advisories after 10s
+    // Repeatable advisories: show when condition is true, hide after 10s
     for (const ra of repeatableAdvisories) {
       const key = `rep-${ra.id}`;
-      if (!dismissedRef.current.has(key)) {
-        dismissedRef.current.add(key);
+      if (!activeRef.current.has(key)) {
+        activeRef.current.add(key);
         setTimeout(() => {
-          dismissedRef.current.delete(key);
+          activeRef.current.delete(key);
           setTick(n => n + 1);
         }, 10000);
         changed = true;
@@ -50,9 +51,9 @@ export default function NotificationOverlay() {
     if (changed) setTick(n => n + 1);
   }, [seenAdvisories, seenAdvisories.length, repeatableAdvisories, repeatableAdvisories.length]);
 
-  // Visible one-time (non-expired) + repeatable (condition still true)
-  const visibleOnce = seenAdvisories.filter((_, i) => dismissedRef.current.has(`once-${i}`));
-  const visibleRepeatable = repeatableAdvisories.filter(ra => dismissedRef.current.has(`rep-${ra.id}`));
+  // Visible: one-time that are still active, plus repeatable that are active
+  const visibleOnce = seenAdvisories.filter((_, i) => activeRef.current.has(`once-${i}`));
+  const visibleRepeatable = repeatableAdvisories.filter(ra => activeRef.current.has(`rep-${ra.id}`));
   const visibleItems = [...visibleOnce, ...visibleRepeatable];
 
   return (
@@ -87,7 +88,6 @@ export default function NotificationOverlay() {
                 <strong>{w.message}</strong>
                 <span className="warning-countdown"> ({w.countdown} day{w.countdown !== 1 ? 's' : ''} left)</span>
               </span>
-              <button className="warning-dismiss" onClick={() => dismissWarning(w.type)}>✕</button>
             </div>
           ))}
         </div>
