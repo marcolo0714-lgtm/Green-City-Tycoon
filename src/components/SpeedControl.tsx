@@ -16,8 +16,10 @@ export default function SpeedControl() {
       {speeds.map(({ speed, label }) => (
         <button
           key={speed}
+          type="button"
           className={`speed-btn ${gameSpeed === speed ? 'active' : ''}`}
-          onClick={() => setGameSpeed(speed)}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setGameSpeed(speed); }}
+          onTouchEnd={(e) => { e.preventDefault(); setGameSpeed(speed); }}
         >
           {label}
         </button>

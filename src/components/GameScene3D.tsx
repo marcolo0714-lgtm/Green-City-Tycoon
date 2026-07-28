@@ -230,6 +230,17 @@ const BuildingOnTile = memo(function BuildingOnTile({
   const buildingH = building.height * 1.2;
   const cutY = constructionRemaining > 0 ? buildingH * (1 - constructionRemaining / 2) : buildingH;
   const bldRef = useRef<THREE.Group>(null);
+  const downPos = useRef({ x: 0, y: 0 });
+
+  const handlePointerDown = useCallback((e: ThreeEvent<PointerEvent>) => {
+    downPos.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
+    const dx = e.clientX - downPos.current.x;
+    const dy = e.clientY - downPos.current.y;
+    if (Math.abs(dx) < 4 && Math.abs(dy) < 4) onClick(e);
+  }, [onClick]);
 
   useEffect(() => {
     const group = bldRef.current;
@@ -258,7 +269,8 @@ const BuildingOnTile = memo(function BuildingOnTile({
   }, [constructionRemaining, cutY]);
 
   return (
-    <group position={[x, 0, z]} onClick={onClick}
+    <group position={[x, 0, z]} onClick={handleClick}
+      onPointerDown={handlePointerDown}
       onPointerOver={(e) => { e.stopPropagation(); setHover(true); }}
       onPointerOut={() => setHover(false)}>
       <group ref={bldRef}>

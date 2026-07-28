@@ -639,6 +639,232 @@ body {
 .confirm-btn.remove { background: #dc2626; border-color: #dc2626; }
 .confirm-btn.remove:hover { background: #b91c1c; }
 
+.minigame-launch {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  animation: minigamePulse 2s ease-in-out infinite;
+}
+.minigame-launch:hover { background: #3b82f6; }
+
+.minigame-launch.standalone {
+  padding: 8px 16px;
+  font-size: 0.75rem;
+  border-radius: 8px;
+}
+
+.minigame-prepare-container {
+  position: fixed;
+  top: 56px;
+  right: 240px;
+  z-index: 85;
+  pointer-events: auto;
+}
+
+@keyframes minigamePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
+}
+
+/* ========== DISASTER MINIGAME ========== */
+
+.minigame-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 250;
+}
+
+.minigame-board {
+  background: #2d4a2d;
+  border: 8px solid #8b7355;
+  border-radius: 16px;
+  padding: 20px 24px;
+  max-width: 480px;
+  width: 92vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 0 60px rgba(0,0,0,0.2);
+}
+
+/* Teacher row */
+.minigame-teacher-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.minigame-teacher {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.teacher-face {
+  font-size: 2.2rem;
+  animation: teacherBounce 1.5s ease-in-out infinite;
+  line-height: 1;
+}
+
+@keyframes teacherBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.teacher-body-css {
+  width: 24px;
+  height: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.teacher-torso-css {
+  width: 20px;
+  height: 30px;
+  background: #4ade80;
+  border-radius: 6px 6px 2px 2px;
+  border: 2px solid #166534;
+}
+
+/* Speech bubble */
+.minigame-bubble {
+  flex: 1;
+  background: #3a5a3a;
+  border: 2px dashed #9ab89a;
+  border-radius: 12px;
+  padding: 12px 16px;
+  position: relative;
+  min-height: 40px;
+}
+
+.minigame-bubble::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: -10px;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 10px solid #3a5a3a;
+}
+
+.minigame-bubble.bubble-correct { border-color: #22c55e; background: #1a3a1a; }
+.minigame-bubble.bubble-wrong { border-color: #ef4444; background: #3a1a1a; }
+
+.minigame-question-text {
+  font-size: 0.85rem;
+  color: #e8e0c8;
+  line-height: 1.4;
+  margin: 0;
+  font-style: italic;
+}
+
+.bubble-reaction {
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #e8e0c8;
+}
+
+.bubble-explanation {
+  font-size: 0.7rem;
+  color: #d4c898;
+  line-height: 1.35;
+}
+
+/* Progress */
+.minigame-progress {
+  font-size: 0.7rem;
+  color: #9ab89a;
+  text-align: right;
+  margin-bottom: 8px;
+}
+
+.minigame-score {
+  margin-left: 10px;
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+/* Answers — single column, 4 rows */
+.minigame-answers-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.minigame-btn {
+  background: #3a5a3a;
+  border: 2px solid #9ab89a;
+  border-radius: 8px;
+  color: #e8e0c8;
+  padding: 10px 14px;
+  font-size: 0.73rem;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.minigame-btn:hover:not(:disabled) {
+  background: #4a6a4a;
+  border-color: #e8e0c8;
+}
+
+.minigame-btn:disabled { cursor: default; }
+
+/* Chosen + correct */
+.minigame-btn.chosen-correct { background: #166534; border-color: #22c55e; color: #fff; }
+/* Chosen + wrong */
+.minigame-btn.chosen-wrong { background: #7f1d1d; border-color: #ef4444; color: #fca5a5; }
+/* Not chosen, correct */
+.minigame-btn.correct { background: #1a5a1a; border-color: #4ade80; color: #4ade80; }
+/* Not chosen, wrong — dim */
+.minigame-btn.dimmed { opacity: 0.45; }
+
+.minigame-letter {
+  font-weight: 700;
+  font-size: 0.75rem;
+  background: rgba(255,255,255,0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.minigame-next {
+  width: 100%;
+  background: #fbbf24;
+  color: #1a1a1a;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+}
+
+.minigame-next:hover { background: #f59e0b; }
+
 /* ========== METER DELTA POPUPS ========== */
 
 .build-popup {
@@ -1010,7 +1236,7 @@ body {
     background: #111827;
     border-top: 1px solid #1e293b;
     padding: 6px 10px;
-    z-index: 40;
+    z-index: 51;
     justify-content: center;
     gap: 8px;
   }
@@ -1034,7 +1260,7 @@ body {
   .right-panel { width: 210px; }
 
   .bottom-toolbar { padding: 4px 8px; gap: 4px; }
-  .bottom-toolbar .speed-btn { font-size: 0.65rem; padding: 5px 8px; }
+  .bottom-toolbar .speed-btn { font-size: 0.65rem; padding: 8px 10px; min-height: 40px; min-width: 36px; }
 
   .objectives-panel { max-width: 130px; padding: 6px 8px; }
   .objective-item { font-size: 0.6rem; }

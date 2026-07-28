@@ -36,6 +36,24 @@ export interface TerrainTile { type: TerrainType; clearing: number; }
 export type DisasterType = 'tsunami' | 'earthquake' | 'drought' | 'smog';
 export interface DisasterWarning { type: DisasterType; message: string; daysLeft: number; }
 
+export interface Question {
+  id: string;
+  type: DisasterType | 'general';
+  question: string;
+  answers: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+export interface MinigameState {
+  type: DisasterType;
+  questions: { id: string; question: string; answers: string[]; correctIndex: number; explanation: string }[];
+  currentIndex: number;
+  score: number;
+  answered: boolean;
+  chosenIndex: number;
+}
+
 export type MeterDeltas = {
   money?: number; population?: number; pollution?: number;
   happiness?: number; renewablePct?: number; resilience?: number;
@@ -57,6 +75,9 @@ export interface GameState extends GameMeters {
   disasterWarning: DisasterWarning | null;
   disasterActive: { type: DisasterType; daysLeft: number } | null;
   disasterLevels: Record<DisasterType, number>;
+  disasterMinigame: MinigameState | null;
+  minigameScore: number;
+  minigamePlayed: boolean;
   resilienceDecay: number;
   meterOffsets: { pollution: number; happiness: number; renewablePct: number; resilience: number };
   meterDeltas: MeterDeltas; justCompleted: string[];
@@ -80,4 +101,7 @@ export interface GameState extends GameMeters {
   adjustMeter: (meter: keyof GameMeters, amount: number) => void;
   confirmRemoval: () => void;
   cancelRemoval: () => void;
+  startMinigame: () => void;
+  answerMinigame: (index: number) => void;
+  closeMinigame: () => void;
 }

@@ -15,6 +15,9 @@ export default function NotificationOverlay() {
   const tickCount = useGameStore((s) => s.tickCount);
   const disasterWarning = useGameStore((s) => s.disasterWarning);
   const disasterActive = useGameStore((s) => s.disasterActive);
+  const disasterMinigame = useGameStore((s) => s.disasterMinigame);
+  const minigamePlayed = useGameStore((s) => s.minigamePlayed);
+  const startMinigame = useGameStore((s) => s.startMinigame);
   const seenAdvisories = useGameStore((s) => s.seenAdvisories);
   const repeatableAdvisories = useGameStore((s) => s.repeatableAdvisories);
   const activeRef = useRef(new Set<string>()); // currently visible keys
@@ -104,6 +107,15 @@ export default function NotificationOverlay() {
           </div>
         ))}
       </div>
+
+      {/* Standalone Prepare button — only when disaster warning active and not yet played */}
+      {disasterWarning && !disasterMinigame && !minigamePlayed && (
+        <div className="minigame-prepare-container">
+          <button className="minigame-launch standalone" onClick={startMinigame}>
+            📚 Prepare for {disasterWarning.type} (5 Qs)
+          </button>
+        </div>
+      )}
 
       {/* Win screen */}
       {gameResult === 'win' && (

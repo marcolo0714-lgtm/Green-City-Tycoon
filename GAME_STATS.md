@@ -197,6 +197,51 @@ Countdown hits 0 → **game over**.
 
 ---
 
+## Educational Minigame (Disaster Preparation)
+
+When a disaster warning appears, a blue **📚 Prepare (5 Qs)** button pulses next to the warning toast. Tapping it opens a chalkboard-themed overlay with a 🧑‍🏫 teacher character.
+
+### Gameplay
+
+- **5 multiple-choice questions** are randomly selected per minigame
+- **2 questions** are guaranteed from the occurring disaster type
+- **3 questions** are drawn randomly from all other pools (other disasters + general sustainability)
+- Each question has **4 answer choices** (A, B, C, D)
+- Correct answers flash **green**, wrong answers flash **red** with the correct one highlighted
+- A brief **explanation** appears below each question after answering
+- The game **pauses** (speed = 0) during the minigame and **resumes** afterward
+
+### Question Pools (110 total)
+
+| Pool | Count | Topics |
+|---|---|---|
+| 🌊 Tsunami | 15 | Tectonics, wave physics, warning systems, historical events, coastal defense |
+| 🔥 Earthquake | 15 | Seismology, building codes, fault lines, preparedness, historical quakes |
+| ☀️ Drought | 15 | Water conservation, agriculture, desertification, SDG 6, climate impact |
+| 💨 Smog | 15 | Air pollution, PM2.5, ozone, clean energy, public health |
+| 🌍 General | 50 | SDGs, climate change, biodiversity, renewable energy, waste, green cities, carbon footprint, ocean health, deforestation |
+
+### Damage Reduction
+
+Score (0-5 correct answers) reduces the disaster's impact when it strikes:
+
+| Score | Tsunami | Earthquake | Drought | Smog |
+|---|---|---|---|---|
+| 0 | no reduction | no reduction | no reduction | no reduction |
+| 1-2 | -$150/building | -0.5 destroyed (floor) | -1 pop loss | -3 pollution |
+| 3-4 | -$150/building | -1 destroyed | -2 pop loss | -6 pollution |
+| 5 | -$150/building | -2 destroyed | -5 pop loss | -15 pollution |
+
+- Scores **stack multiplicatively** with building-based defenses (seawalls, parks, emergency centers)
+- Score resets to 0 after the disaster fires
+- The minigame is **optional** — skipping it means facing the disaster at full strength
+
+### Advisory Hint
+
+First time a disaster warning appears, a 💡 advisory fires: *"A disaster is coming! Tap 📚 Prepare to answer 5 questions and reduce the damage."*
+
+---
+
 ## Speed Controls
 
 | Speed | Interval | Label |

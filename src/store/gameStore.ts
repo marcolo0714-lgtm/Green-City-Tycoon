@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import type { Building, GameMeters, GameState, Grid, Warning, TerrainType, TerrainTile, DisasterType } from '../types';
+import type { Building, GameMeters, GameState, Grid, Warning, TerrainType, TerrainTile, DisasterType, MinigameState } from '../types';
 import { BUILDINGS } from '../data/buildings';
+import { QUESTIONS } from '../data/questions';
 
 const GRID_SIZE = 8;
 const STARTING_MONEY = 1000;
@@ -163,16 +164,18 @@ function applyDisaster(
   state: { grid: Grid; meters: GameMeters },
   type: DisasterType,
   level: number,
+  minigameScore: number,
 ): { grid: Grid; meters: GameMeters; destroyed: string[] } {
   const grid = state.grid.map(r => [...r]);
   let m = { ...state.meters };
   const destroyed: string[] = [];
   const L = level;
+  const M = minigameScore; // 0-5 from educational minigame
 
   if (type === 'tsunami') {
     let destCount = 0;
     const range = L <= 2 ? 1 : L <= 4 ? 2 : 3;
-    const costPer = 500 + (L - 1) * 250;
+    const costPer = 500 + (L - 1) * 250 - M * 150;
     for (let ri = 0; ri < GRID_SIZE; ri++) {
       for (let ci = 0; ci < GRID_SIZE; ci++) {
         const dist = Math.min(ri, ci, GRID_SIZE - 1 - ri, GRID_SIZE - 1 - ci);
@@ -206,7 +209,7 @@ function applyDisaster(
     const parkCount = countSpecific(grid, b => b.shape === 'park');
     const resilienceBlock = Math.floor(m.resilience / 20);
     const blocked = emergencyCount + Math.floor(parkCount / 2) + resilienceBlock;
-    const toDestroy = Math.max(1, maxDestroy - blocked);
+    const toDestroy = Math.max(1, maxDestroy - blocked - Math.floor(M / 2));
     let destCount = 0;
     const shuffled: Array<[number, number]> = [];
     for (let ri = 0; ri < GRID_SIZE; ri++) for (let ci = 0; ci < GRID_SIZE; ci++) if (grid[ri][ci]) shuffled.push([ri, ci]);
@@ -223,7 +226,7 @@ function applyDisaster(
     m.happiness = Math.max(0, m.happiness - (6 + L));
   } else if (type === 'drought') {
     const parkDefense = Math.min(countSpecific(grid, b => b.shape === 'park'), 5);
-    const popLoss = Math.max(0, (3 + L * 2) - parkDefense);
+    const popLoss = Math.max(0, (3 + L * 2) - parkDefense - M);
     const happLoss = Math.max(0, (8 + L * 2) - parkDefense);
     const moneyLoss = 400 + (L - 1) * 300;
     m.population = Math.max(0, m.population - popLoss);
@@ -232,7 +235,7 @@ function applyDisaster(
     if (L >= 5) m.happiness = Math.max(0, m.happiness - 5); // extra: halved growth simulated as extra unhappiness
   } else if (type === 'smog') {
     const cleanCount = countSpecific(grid, b => b.renewableBoost > 0 || b.pollution < -3);
-    const polExtra = Math.max(0, (15 + L * 5) - cleanCount * 2);
+    const polExtra = Math.max(0, (15 + L * 5) - cleanCount * 2 - M * 3);
     const popLoss = Math.max(0, (3 + L) - Math.floor(cleanCount / 2));
     const happLoss = Math.max(0, (3 + L) - Math.floor(cleanCount / 2));
     m.pollution = Math.min(100, m.pollution + polExtra);
@@ -267,7 +270,18 @@ const ADVISORY_TRIGGERS: Array<{ id: string; check: (state: GameState, prev: Gam
   { id: 'pollution_warn', check: (s) => s.warnings.some(w => w.type === 'pollution'), message: '⚠️ Pollution critical! Build Parks, Green Roofs, or Renewable energy.', canRepeat: true },
   { id: 'happiness_warn', check: (s) => s.warnings.some(w => w.type === 'happiness'), message: '⚠️ Citizens unhappy! Add Parks, Green Roofs, and reduce pollution.', canRepeat: true },
   { id: 'overcrowding', check: (s) => { const ec = countBuildings(s.grid, 'economic'); const gc = countBuildings(s.grid, 'green'); const hc = ec * 250 + gc * 50; return hc > 0 && s.population > hc; }, message: '🏘️ Overcrowding! Build more Houses or Shops to provide adequate housing.', canRepeat: true },
+  { id: 'disaster_prepare', check: (s) => s.disasterWarning !== null, message: 'A disaster is coming! Tap 📚 Prepare to answer 5 questions and reduce the damage.' },
 ];
+
+function findTerrainPartner(tm: Record<string, TerrainTile>, r: number, c: number): string | null {
+  const type = tm[`${r},${c}`]?.type;
+  if (!type) return null;
+  for (const [dr, dc] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+    const key = `${r + dr},${c + dc}`;
+    if (tm[key]?.type === type) return key;
+  }
+  return null;
+}
 
 export const useGameStore = create<GameState>((set) => ({
   grid: createEmptyGrid(GRID_SIZE),
@@ -280,6 +294,7 @@ export const useGameStore = create<GameState>((set) => ({
   pendingRemoval: null,
   disasterWarning: null, disasterActive: null,
   disasterLevels: { tsunami: 1, earthquake: 1, drought: 1, smog: 1 },
+  disasterMinigame: null, minigameScore: 0, minigamePlayed: false,
   resilienceDecay: 0,
   meterOffsets: { pollution: 0, happiness: 0, renewablePct: 0, resilience: 0 },
   meterDeltas: {}, justCompleted: [], destroyedTiles: [],
@@ -336,9 +351,13 @@ export const useGameStore = create<GameState>((set) => ({
       : [...state.seenAdvisories, { id: 'terrain_info', message: 'Terrain can be cleared to free up more buildable land.' }];
     const cost = TERRAIN_CLEAR_COST[t.type];
     if (state.money < cost) return { seenAdvisories };
+    // Find and clear the partner tile of this terrain pair
+    const partnerKey = findTerrainPartner(state.terrainMap, row, col);
+    const newClearing = { ...state.terrainClearing, [key]: TERRAIN_CLEAR_TIME[t.type] };
+    if (partnerKey) newClearing[partnerKey] = TERRAIN_CLEAR_TIME[t.type];
     return {
       money: state.money - cost,
-      terrainClearing: { ...state.terrainClearing, [key]: TERRAIN_CLEAR_TIME[t.type] },
+      terrainClearing: newClearing,
       seenAdvisories,
     };
   }),
@@ -368,6 +387,7 @@ export const useGameStore = create<GameState>((set) => ({
     let disasterWarning = state.disasterWarning;
     let disasterActive = state.disasterActive;
     let disasterLevels = { ...state.disasterLevels };
+    let minigamePlayed = state.minigamePlayed;
     let gridAfterDisaster = state.grid.map(r => [...r]);
     let extraMeters: Partial<GameMeters> = {};
     let destroyedTiles: string[] = [];
@@ -388,12 +408,13 @@ export const useGameStore = create<GameState>((set) => ({
       const type = types[Math.floor(Math.random() * types.length)];
       const lvl = disasterLevels[type];
       disasterWarning = { type, message: `⚠️ Level ${lvl} ${DISASTER_MESSAGES[type]}`, daysLeft: maxWarning };
+      minigamePlayed = false;
     } else if (disasterWarning) {
       const remaining = disasterWarning.daysLeft - 1;
       if (remaining <= 0) {
         const dw = disasterWarning!;
         const lvl = disasterLevels[dw.type];
-        const result = applyDisaster({ grid: gridAfterDisaster, meters: state }, dw.type, lvl);
+        const result = applyDisaster({ grid: gridAfterDisaster, meters: state }, dw.type, lvl, state.minigameScore);
         gridAfterDisaster = result.grid;
         extraMeters = result.meters;
         destroyedTiles = result.destroyed;
@@ -468,11 +489,12 @@ export const useGameStore = create<GameState>((set) => ({
       constructionMap: newCMap, warnings,
       disasterWarning, disasterActive,
       disasterLevels, destroyedTiles,
-      resilienceDecay,
+      resilienceDecay, minigamePlayed,
       completedObjectives, seenAdvisories,
       repeatableAdvisories,
       gameResult: gameOver || (won ? 'win' : null),
       hasWon: state.hasWon || (won ? true : false),
+      minigameScore: destroyedTiles.length > 0 ? 0 : state.minigameScore,
       meterDeltas: {
         money: meters.money - state.money,
         population: +(meters.population - state.population).toFixed(0),
@@ -555,6 +577,40 @@ export const useGameStore = create<GameState>((set) => ({
 
   cancelRemoval: () => set({ pendingRemoval: null }),
 
+  startMinigame: () => set((state) => {
+    if (!state.disasterWarning || state.disasterMinigame) return state;
+    const type = state.disasterWarning.type;
+    // Pick 2 from disaster type + 3 random from all pools
+    const typeQs = QUESTIONS.filter(q => q.type === type);
+    const otherQs = QUESTIONS.filter(q => q.type !== type);
+    const shuffled = [...typeQs].sort(() => Math.random() - 0.5);
+    const shuffledOther = [...otherQs].sort(() => Math.random() - 0.5);
+    const selected = [...shuffled.slice(0, 2), ...shuffledOther.slice(0, 3)]
+      .sort(() => Math.random() - 0.5)
+      .map(q => ({ id: q.id, question: q.question, answers: q.answers, correctIndex: q.correctIndex, explanation: q.explanation }));
+    return {
+      disasterMinigame: { type, questions: selected, currentIndex: 0, score: 0, answered: false, chosenIndex: -1 },
+      gameSpeed: 0, minigamePlayed: true,
+    };
+  }),
+
+  answerMinigame: (answerIndex: number) => set((state) => {
+    if (!state.disasterMinigame) return state;
+    const mg = { ...state.disasterMinigame };
+    const q = mg.questions[mg.currentIndex];
+    if (!q || mg.answered) return state;
+    mg.answered = true;
+    mg.chosenIndex = answerIndex;
+    if (answerIndex === q.correctIndex) mg.score++;
+    return { disasterMinigame: mg as MinigameState };
+  }),
+
+  closeMinigame: () => set((state) => {
+    if (!state.disasterMinigame) return state;
+    const score = state.disasterMinigame.score;
+    return { disasterMinigame: null, minigameScore: score, gameSpeed: 1 };
+  }),
+
   resetGame: () => set({
     grid: createEmptyGrid(GRID_SIZE), money: STARTING_MONEY,
   population: 100, pollution: 0, happiness: 50, renewablePct: 0, resilience: 0,
@@ -564,6 +620,7 @@ export const useGameStore = create<GameState>((set) => ({
   pendingRemoval: null,
     disasterWarning: null, disasterActive: null,
     disasterLevels: { tsunami: 1, earthquake: 1, drought: 1, smog: 1 },
+  disasterMinigame: null, minigameScore: 0, minigamePlayed: false,
     resilienceDecay: 0,
     meterOffsets: { pollution: 0, happiness: 0, renewablePct: 0, resilience: 0 },
     meterDeltas: {}, justCompleted: [], destroyedTiles: [],

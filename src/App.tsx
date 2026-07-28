@@ -8,6 +8,7 @@ import NotificationOverlay from './components/NotificationOverlay';
 import TutorialOverlay from './components/TutorialOverlay';
 import ObjectivesPanel from './components/ObjectivesPanel';
 import ConfirmDialog from './components/ConfirmDialog';
+import DisasterMinigame from './components/DisasterMinigame';
 import { useGameStore } from './store/gameStore';
 import './App.css';
 
@@ -25,18 +26,21 @@ function App() {
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
   const prevSpeedRef = useRef(gameSpeed);
+  const pausedByPanel = useRef(false);
 
-  // Pause on mobile panel open, resume when both close
+  // Pause on mobile panel open, resume when panel closes (don't override manual pause)
   useEffect(() => {
     const isMobile = window.innerWidth <= 900;
+    if (!isMobile) return;
     const panelOpen = leftOpen || rightOpen;
-    if (isMobile && panelOpen && gameSpeed !== 0) {
-      prevSpeedRef.current = gameSpeed;
-      setGameSpeed(0);
-    } else if (isMobile && !panelOpen && gameSpeed === 0 && prevSpeedRef.current !== 0 && !gameResult) {
+    if (panelOpen) {
+      const gs = useGameStore.getState().gameSpeed;
+      if (gs !== 0) { prevSpeedRef.current = gs; setGameSpeed(0); pausedByPanel.current = true; }
+    } else if (pausedByPanel.current && !useGameStore.getState().gameResult) {
       setGameSpeed(prevSpeedRef.current);
+      pausedByPanel.current = false;
     }
-  }, [leftOpen, rightOpen, gameSpeed, gameResult, setGameSpeed]);
+  }, [leftOpen, rightOpen, setGameSpeed]);
 
   useEffect(() => {
     if (intervalRef.current !== null) {
@@ -95,14 +99,15 @@ function App() {
 
       {/* Mobile bottom toolbar */}
       <div className="bottom-toolbar">
-        <SpeedControl />
         <button className="speed-btn" onClick={() => setLeftOpen(o => !o)}>🏗️</button>
+        <SpeedControl />
         <button className="speed-btn" onClick={() => setRightOpen(o => !o)}>📊</button>
       </div>
 
       <NotificationOverlay />
       <ObjectivesPanel />
       <ConfirmDialog />
+      <DisasterMinigame />
       <TutorialOverlay />
     </div>
   );
