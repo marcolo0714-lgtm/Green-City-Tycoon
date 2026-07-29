@@ -6,8 +6,8 @@ import MeterPanel from './components/MeterPanel';
 import SpeedControl from './components/SpeedControl';
 import NotificationOverlay from './components/NotificationOverlay';
 import TutorialOverlay from './components/TutorialOverlay';
-import ObjectivesPanel from './components/ObjectivesPanel';
 import ConfirmDialog from './components/ConfirmDialog';
+import EventPopup from './components/EventPopup';
 import DisasterMinigame from './components/DisasterMinigame';
 import { useGameStore } from './store/gameStore';
 import './App.css';
@@ -105,8 +105,8 @@ function App() {
       </div>
 
       <NotificationOverlay />
-      <ObjectivesPanel />
       <ConfirmDialog />
+      <EventPopup />
       <DisasterMinigame />
       <TutorialOverlay />
     </div>

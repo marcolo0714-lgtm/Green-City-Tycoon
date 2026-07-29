@@ -1,12 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
 
-const STEPS = [
+interface Step {
+  key: string;
+  title: string;
+  text: string;
+  waitFor: string | null;
+  hint?: string;
+  showWhen?: (money: number, eventsCount: number) => boolean;
+}
+
+const STEPS: Step[] = [
   {
     key: 'welcome',
     title: 'Welcome, Mayor!',
     text: 'Your mission: build a sustainable city that thrives economically and environmentally. Let\'s start by placing your first building.',
-    waitFor: null as string | null,
+    waitFor: null,
   },
   {
     key: 'select',
@@ -25,7 +34,7 @@ const STEPS = [
   {
     key: 'done',
     title: 'Great Start!',
-    text: 'Your first building is up! Now keep building — balance economic buildings with green spaces, renewable energy, and community services. Watch the meters on the right to track your city\'s health.',
+    text: 'Your first building is up! Keep building to earn income — more Houses and Shops boost your daily earnings.',
     waitFor: null,
   },
   {
@@ -33,6 +42,20 @@ const STEPS = [
     title: 'Watch the Meters',
     text: 'The right panel shows all 6 meter bars — Money, Population, Happiness, Air Quality, Renewable %, and Resilience. Fill them all and go green to win!',
     waitFor: null,
+  },
+  {
+    key: 'events',
+    title: 'Organize Events',
+    text: 'Now you can organize events! Switch to the Events tab in the sidebar. Events are one-time purchases that permanently boost your meters — like doubling your income or multiplying your population capacity!',
+    waitFor: null,
+    showWhen: (m, e) => m >= 500 && e === 0,
+  },
+  {
+    key: 'events_detail',
+    title: 'How Events Work',
+    text: 'Each event has conditions (like minimum population) and takes 2-8 days to organize. When complete, its effects stack multiplicatively — making all your buildings much more powerful. You\'ll need most events to win!',
+    waitFor: null,
+    showWhen: (m, e) => m >= 500 && e === 0,
   },
 ];
 
@@ -45,6 +68,8 @@ export default function TutorialOverlay() {
   const setGameSpeed = useGameStore((s) => s.setGameSpeed);
   const tutorialReplay = useGameStore((s) => s.tutorialReplay);
   const setTutorialStep = useGameStore((s) => s.setTutorialStep);
+  const money = useGameStore((s) => s.money);
+  const eventsOrganized = useGameStore((s) => s.eventsOrganized);
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
   useEffect(() => {
@@ -61,6 +86,9 @@ export default function TutorialOverlay() {
   const setGameSpeedRef = useRef(setGameSpeed);
   setGameSpeedRef.current = setGameSpeed;
   const prevComplete = useRef(tutorialComplete);
+
+  // Filter steps: show event steps only when player has $300+
+  const visibleSteps = STEPS.filter(s => !s.showWhen || s.showWhen(money, eventsOrganized.length));
 
   // Sync step to store so BuildingMenu can read it
   useEffect(() => { setTutorialStep(step); }, [step, setTutorialStep]);
@@ -87,9 +115,14 @@ export default function TutorialOverlay() {
     };
   }, [tutorialComplete]);
 
+  // Ensure step stays within visible steps
+  useEffect(() => {
+    if (step >= visibleSteps.length) setStep(visibleSteps.length - 1);
+  }, [visibleSteps.length, step]);
+
   const occupiedCount = grid.flat().filter(Boolean).length;
-  const s = STEPS[step];
-  const isLast = step === STEPS.length - 1;
+  const s = visibleSteps[step] || visibleSteps[visibleSteps.length - 1];
+  const isLast = step === visibleSteps.length - 1;
 
   // Auto-advance when user completes the required action
   useEffect(() => {
@@ -135,8 +168,8 @@ export default function TutorialOverlay() {
           <button className="tutorial-btn skip" onClick={completeTutorial}>Skip Tutorial</button>
         </div>
         <div className="tutorial-dots">
-          {STEPS.map((_, i) => (
-            <span key={i} className={`dot ${i === step ? 'active' : ''}`} onClick={() => !STEPS[i].waitFor && setStep(i)} />
+          {visibleSteps.map((_, i) => (
+            <span key={i} className={`dot ${i === step ? 'active' : ''}`} onClick={() => !visibleSteps[i].waitFor && setStep(i)} />
           ))}
         </div>
       </div>

@@ -112,7 +112,7 @@ export default function NotificationOverlay() {
       {disasterWarning && !disasterMinigame && !minigamePlayed && (
         <div className="minigame-prepare-container">
           <button className="minigame-launch standalone" onClick={startMinigame}>
-            📚 Prepare for {disasterWarning.type} (5 Qs)
+            ⚠️ Prepare for {disasterWarning.type} (5 Qs)
           </button>
         </div>
       )}

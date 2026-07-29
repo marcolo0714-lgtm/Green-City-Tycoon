@@ -2,7 +2,10 @@ export type Category = 'economic' | 'water' | 'energy' | 'coastal' | 'green' | '
 
 export type Shape = 'house' | 'shop' | 'tower' | 'factory' | 'park' | 'green_roof' | 'stepped'
   | 'cylinder' | 'turbine' | 'solar' | 'block' | 'wall' | 'sloped' | 'observatory'
-  | 'dome' | 'chimney' | 'flat';
+  | 'dome' | 'chimney' | 'flat'
+  | 'solar_farm' | 'station' | 'forest_tower' | 'water_plant'
+  | 'lab_complex' | 'grid_center' | 'trade_center' | 'peace_garden'
+  | 'charging_station' | 'geothermal' | 'lab';
 
 export interface Building {
   id: string; name: string; shortName: string; emoji: string;
@@ -11,6 +14,7 @@ export interface Building {
   resilienceBoost: number; renewableBoost: number;
   height: number; shape: Shape;
   coastalOnly?: boolean;
+  unlockEvent?: string;
 }
 
 export type GridCell = Building | null;
@@ -34,7 +38,7 @@ export type TerrainType = 'mountain' | 'lake' | 'forest';
 export interface TerrainTile { type: TerrainType; clearing: number; }
 
 export type DisasterType = 'tsunami' | 'earthquake' | 'drought' | 'smog';
-export interface DisasterWarning { type: DisasterType; message: string; daysLeft: number; }
+export interface DisasterWarning { type: DisasterType; message: string; daysLeft: number; isDev?: boolean; }
 
 export interface Question {
   id: string;
@@ -53,6 +57,60 @@ export interface MinigameState {
   answered: boolean;
   chosenIndex: number;
 }
+
+export interface EventConditions {
+  population?: number;
+  happiness?: number;
+  pollution?: number;
+  renewablePct?: number;
+  resilience?: number;
+  money?: number;
+  requiredEvent?: string;
+}
+
+export interface EventEffects {
+  incomeMultiplier?: number;
+  happinessMultiplier?: number;
+  resilienceMultiplier?: number;
+  renewableMultiplier?: number;
+  pollutionMultiplier?: number;
+  popCapMultiplier?: number;
+  popGrowthMultiplier?: number;
+}
+
+export interface GameEvent {
+  id: string; name: string; emoji: string; color: string;
+  cost: number; duration: number;
+  description: string; popupDescription?: string;
+  conditions: EventConditions;
+  effects: EventEffects;
+  unlocksBuildings: string[];
+}
+
+export interface EventPopupData {
+  id: string; name: string; emoji: string; color: string;
+  description: string; effects: string[];
+}
+
+export interface ActiveBuffs {
+  incomeMultiplier: number;
+  happinessMultiplier: number;
+  resilienceMultiplier: number;
+  renewableMultiplier: number;
+  pollutionMultiplier: number;
+  popCapMultiplier: number;
+  popGrowthMultiplier: number;
+}
+
+export const DEFAULT_BUFFS: ActiveBuffs = {
+  incomeMultiplier: 1,
+  happinessMultiplier: 1,
+  resilienceMultiplier: 1,
+  renewableMultiplier: 1,
+  pollutionMultiplier: 1,
+  popCapMultiplier: 1,
+  popGrowthMultiplier: 1,
+};
 
 export type MeterDeltas = {
   money?: number; population?: number; pollution?: number;
@@ -85,10 +143,19 @@ export interface GameState extends GameMeters {
   completedObjectives: string[];
   seenAdvisories: { id: string; message: string }[];
   repeatableAdvisories: { id: string; message: string }[];
+  eventsOrganized: string[];
+  eventTimers: Record<string, number>;
+  activeBuffs: ActiveBuffs;
+  devDisasterLevel: number;
+  devShowAllGoals: boolean;
+  devShowAllEventViews: boolean;
+  eventPopups: EventPopupData[];
+  prePopupSpeed: GameSpeed;
   selectBuilding: (building: Building | null) => void;
   placeBuilding: (row: number, col: number) => void;
   removeBuilding: (row: number, col: number) => void;
   clearTerrain: (row: number, col: number) => void;
+  organizeEvent: (eventId: string) => void;
   tick: () => void; setGameSpeed: (speed: GameSpeed) => void;
   dismissWarning: (type: Warning['type']) => void;
   completeTutorial: () => void;   restartTutorial: () => void;
@@ -98,6 +165,12 @@ export interface GameState extends GameMeters {
   toggleDevGrid: () => void;
   cancelDisaster: () => void;
   startDisaster: (type: DisasterType) => void;
+  instantComplete: () => void;
+  setDevDisasterLevel: (level: number) => void;
+  toggleShowAllGoals: () => void;
+  toggleShowAllEventViews: () => void;
+  dismissEventPopup: () => void;
+  showEventPopup: (eventId: string) => void;
   adjustMeter: (meter: keyof GameMeters, amount: number) => void;
   confirmRemoval: () => void;
   cancelRemoval: () => void;

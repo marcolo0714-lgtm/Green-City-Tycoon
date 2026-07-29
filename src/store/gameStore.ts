@@ -1,10 +1,12 @@
 import { create } from 'zustand';
-import type { Building, GameMeters, GameState, Grid, Warning, TerrainType, TerrainTile, DisasterType, MinigameState } from '../types';
+import type { Building, GameMeters, GameState, Grid, Warning, TerrainType, TerrainTile, DisasterType, MinigameState, ActiveBuffs } from '../types';
+import { DEFAULT_BUFFS } from '../types';
 import { BUILDINGS } from '../data/buildings';
+import { EVENTS } from '../data/events';
 import { QUESTIONS } from '../data/questions';
 
-const GRID_SIZE = 8;
-const STARTING_MONEY = 1000;
+const GRID_SIZE = 9;
+const STARTING_MONEY = 300;
 const BUILD_TICKS = 2;
 const TERRAIN_CLEAR_COST: Record<TerrainType, number> = { mountain: 8000, lake: 4000, forest: 2000 };
 const TERRAIN_CLEAR_TIME: Record<TerrainType, number> = { mountain: 6, lake: 4, forest: 2 };
@@ -75,42 +77,56 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+function deriveDisasterLevel(eventsOrganized: number): number {
+  if (eventsOrganized <= 1) return 1;
+  if (eventsOrganized <= 3) return 2;
+  if (eventsOrganized <= 5) return 3;
+  if (eventsOrganized <= 7) return 4;
+  return 5;
+}
+
 function gridWithoutConstruction(grid: Grid, constructionMap: Record<string, number>): Grid {
   return grid.map((row, ri) =>
     row.map((cell, ci) => cell && (constructionMap[`${ri},${ci}`] ?? 0) > 0 ? null : cell)
   );
 }
 
-function recalculateMeters(grid: Grid, currentMeters: GameMeters): GameMeters {
+function recalculateMeters(grid: Grid, currentMeters: GameMeters, buffs: ActiveBuffs = DEFAULT_BUFFS): GameMeters {
   const ecoCount = countBuildings(grid, 'economic');
   const greenCount = countBuildings(grid, 'green');
   const energyCount = countBuildings(grid, 'energy');
   const total = totalBuildings(grid);
 
   const rawPollution = sumBuildingStat(grid, 'pollution');
-  const pollution = Math.max(0, Math.min(100, rawPollution));
+  const scaledPollution = Math.round(rawPollution * buffs.pollutionMultiplier);
+  const pollution = Math.max(0, Math.min(100, scaledPollution));
 
   const happinessBase = 40;
-  const happinessFromBuildings = sumBuildingStat(grid, 'happinessBoost');
+  const rawHappinessBoost = sumBuildingStat(grid, 'happinessBoost');
+  const scaledHappinessBoost = Math.round(rawHappinessBoost * buffs.happinessMultiplier);
   const happinessFromPollution = -pollution * 0.5;
-  const happiness = Math.max(0, Math.min(100, happinessBase + happinessFromBuildings + happinessFromPollution));
+  const happiness = Math.max(0, Math.min(100, happinessBase + scaledHappinessBoost + happinessFromPollution));
 
-  const renewable = total > 0 ? Math.min(100, (energyCount / total) * 65 + sumBuildingStat(grid, 'renewableBoost')) : 0;
-  const resilience = Math.min(100, sumBuildingStat(grid, 'resilienceBoost'));
+  const rawRenewable = sumBuildingStat(grid, 'renewableBoost');
+  const scaledRenewable = Math.round(rawRenewable * buffs.renewableMultiplier);
+  const renewable = total > 0 ? Math.min(100, (energyCount / total) * 65 + scaledRenewable) : 0;
 
-  const housingCapacity = ecoCount * 250 + greenCount * 50;
+  const rawResilience = sumBuildingStat(grid, 'resilienceBoost');
+  const scaledResilience = Math.round(rawResilience * buffs.resilienceMultiplier);
+  const resilience = Math.min(100, scaledResilience);
+
+  const housingCapacity = Math.floor((ecoCount * 250 + greenCount * 50) * buffs.popCapMultiplier);
   const popChange = housingCapacity > 0
-    ? currentMeters.happiness >= 30 ? (currentMeters.happiness / 100) * 25 : -5
+    ? Math.round(currentMeters.happiness >= 30 ? (currentMeters.happiness / 100) * 25 * buffs.popGrowthMultiplier : -5)
     : -5;
   const rawPop = currentMeters.population + popChange;
-  // Allow up to 20% overcrowding, but cap population
-  const overcrowdCap = housingCapacity > 0 ? housingCapacity * 1.2 : 0;
+  const overcrowdCap = housingCapacity > 0 ? Math.floor(housingCapacity * 1.2) : 0;
   const newPopulation = housingCapacity > 0
     ? Math.min(overcrowdCap, rawPop)
     : Math.max(0, rawPop);
 
   return {
-    money: currentMeters.money + sumBuildingStat(grid, 'income'),
+    money: currentMeters.money + Math.floor(sumBuildingStat(grid, 'income') * buffs.incomeMultiplier),
     population: Math.floor(newPopulation),
     pollution: Math.round(pollution),
     happiness: Math.round(happiness),
@@ -119,8 +135,8 @@ function recalculateMeters(grid: Grid, currentMeters: GameMeters): GameMeters {
   };
 }
 
-function recalculateGrid(grid: Grid, currentMeters: GameMeters): GameMeters {
-  return recalculateMeters(grid, currentMeters);
+function recalculateGrid(grid: Grid, currentMeters: GameMeters, buffs: ActiveBuffs = DEFAULT_BUFFS): GameMeters {
+  return recalculateMeters(grid, currentMeters, buffs);
 }
 
 function checkWarnings(meters: GameMeters, existing: Warning[]): Warning[] {
@@ -142,8 +158,8 @@ function checkGameOver(warnings: Warning[]): 'lose' | null {
 }
 
 function checkWin(meters: GameMeters): boolean {
-  return meters.money >= 100000 && meters.population >= 1000 && meters.happiness >= 90
-    && meters.resilience >= 90 && meters.renewablePct >= 80 && meters.pollution <= 10;
+  return meters.money >= 10000000 && meters.population >= 5000000 && meters.happiness >= 95
+    && meters.resilience >= 95 && meters.renewablePct >= 95 && meters.pollution <= 5;
 }
 
 // ---- disaster logic ----
@@ -170,12 +186,26 @@ function applyDisaster(
   let m = { ...state.meters };
   const destroyed: string[] = [];
   const L = level;
-  const M = minigameScore; // 0-5 from educational minigame
+  const M = minigameScore;
+  const pct = 1 - M * 0.14; // M=0 → 100%, M=5 → 30% damage
+
+  const TSUNAMI_COST = [500, 2000, 8000, 30000, 100000];
+  const EARTHQUAKE_COST = [300, 1500, 6000, 25000, 80000];
+  const DROUGHT_MONEY = [300, 1500, 6000, 25000, 80000];
+  const TSUNAMI_RES = [15, 25, 40, 60, 90];
+  const TSUNAMI_HAP = [5, 8, 12, 18, 30];
+  const EQ_RES = [10, 18, 30, 50, 80];
+  const EQ_HAP = [4, 6, 10, 15, 25];
+  const DROUGHT_POP = [5, 10, 20, 40, 80];
+  const DROUGHT_HAP = [8, 12, 18, 30, 50];
+  const SMOG_POL = [15, 28, 45, 65, 90];
+  const SMOG_POP = [3, 6, 12, 25, 60];
+  const SMOG_HAP = [3, 6, 12, 25, 45];
 
   if (type === 'tsunami') {
     let destCount = 0;
     const range = L <= 2 ? 1 : L <= 4 ? 2 : 3;
-    const costPer = 500 + (L - 1) * 250 - M * 150;
+    const costPer = Math.max(0, Math.round(TSUNAMI_COST[L - 1] * pct));
     for (let ri = 0; ri < GRID_SIZE; ri++) {
       for (let ci = 0; ci < GRID_SIZE; ci++) {
         const dist = Math.min(ri, ci, GRID_SIZE - 1 - ri, GRID_SIZE - 1 - ci);
@@ -201,10 +231,10 @@ function applyDisaster(
       }
     }
     m.money -= destCount * costPer;
-    m.resilience = Math.max(0, m.resilience - (25 + L * 5));
-    m.happiness = Math.max(0, m.happiness - (8 + L));
+    m.resilience = Math.max(0, m.resilience - Math.round(TSUNAMI_RES[L - 1] * pct));
+    m.happiness = Math.max(0, m.happiness - Math.round(TSUNAMI_HAP[L - 1] * pct));
   } else if (type === 'earthquake') {
-    const maxDestroy = L + 1;
+    const maxDestroy = L;
     const emergencyCount = countSpecific(grid, b => b.id === 'emergency_center');
     const parkCount = countSpecific(grid, b => b.shape === 'park');
     const resilienceBlock = Math.floor(m.resilience / 20);
@@ -220,24 +250,24 @@ function applyDisaster(
       grid[ri][ci] = null;
       destCount++;
     }
-    const costPer = 700 + (L - 1) * 300;
+    const costPer = Math.max(0, Math.round(EARTHQUAKE_COST[L - 1] * pct));
     m.money -= destCount * costPer;
-    m.resilience = Math.max(0, m.resilience - (15 + L * 5));
-    m.happiness = Math.max(0, m.happiness - (6 + L));
+    m.resilience = Math.max(0, m.resilience - Math.round(EQ_RES[L - 1] * pct));
+    m.happiness = Math.max(0, m.happiness - Math.round(EQ_HAP[L - 1] * pct));
   } else if (type === 'drought') {
     const parkDefense = Math.min(countSpecific(grid, b => b.shape === 'park'), 5);
-    const popLoss = Math.max(0, (3 + L * 2) - parkDefense - M);
-    const happLoss = Math.max(0, (8 + L * 2) - parkDefense);
-    const moneyLoss = 400 + (L - 1) * 300;
+    const popLoss = Math.max(0, Math.round(DROUGHT_POP[L - 1] * pct) - parkDefense);
+    const happLoss = Math.max(0, Math.round(DROUGHT_HAP[L - 1] * pct) - parkDefense);
+    const moneyLoss = Math.max(0, Math.round(DROUGHT_MONEY[L - 1] * pct));
     m.population = Math.max(0, m.population - popLoss);
     m.happiness = Math.max(0, m.happiness - happLoss);
     m.money -= moneyLoss;
-    if (L >= 5) m.happiness = Math.max(0, m.happiness - 5); // extra: halved growth simulated as extra unhappiness
+    if (L >= 5) m.happiness = Math.max(0, m.happiness - Math.round(15 * pct));
   } else if (type === 'smog') {
     const cleanCount = countSpecific(grid, b => b.renewableBoost > 0 || b.pollution < -3);
-    const polExtra = Math.max(0, (15 + L * 5) - cleanCount * 2 - M * 3);
-    const popLoss = Math.max(0, (3 + L) - Math.floor(cleanCount / 2));
-    const happLoss = Math.max(0, (3 + L) - Math.floor(cleanCount / 2));
+    const polExtra = Math.max(0, Math.round(SMOG_POL[L - 1] * pct) - cleanCount * 2);
+    const popLoss = Math.max(0, Math.round(SMOG_POP[L - 1] * pct) - Math.floor(cleanCount / 2));
+    const happLoss = Math.max(0, Math.round(SMOG_HAP[L - 1] * pct) - Math.floor(cleanCount / 2));
     m.pollution = Math.min(100, m.pollution + polExtra);
     m.population = Math.max(0, m.population - popLoss);
     m.happiness = Math.max(0, m.happiness - happLoss);
@@ -249,28 +279,40 @@ function applyDisaster(
 interface Objective { id: string; text: string; check: (state: GameState) => boolean; requires?: string; }
 const OBJECTIVES: Objective[] = [
   { id: 'first_build', text: 'Place your first building', check: (s) => s.grid.some(r => r.some(c => c !== null)) },
-  { id: 'money_1k', text: 'Reach $1,000', check: (s) => s.money >= 1000, requires: 'first_build' },
-  { id: 'pop_20', text: 'Reach 20 population', check: (s) => s.population >= 20, requires: 'first_build' },
-  { id: 'park_built', text: 'Build a Park or Green Roof', check: (s) => s.grid.some(r => r.some(c => c && (c.id === 'park' || c.id === 'green_roof'))), requires: 'pop_20' },
-  { id: 'happiness_50', text: 'Reach 50% happiness', check: (s) => s.happiness >= 50, requires: 'park_built' },
-  { id: 'renewable_built', text: 'Build a renewable energy building', check: (s) => s.grid.some(r => r.some(c => c && c.renewableBoost > 0)), requires: 'money_1k' },
-  { id: 'money_50k', text: 'Reach $50,000', check: (s) => s.money >= 50000, requires: 'money_1k' },
-  { id: 'renewable_80', text: 'Reach 80%+ renewable energy', check: (s) => s.renewablePct >= 80, requires: 'renewable_built' },
-  { id: 'survive_disaster', text: 'Survive a natural disaster', check: (s) => Object.values(s.disasterLevels).some(l => l > 1), requires: 'money_1k' },
+  { id: 'money_500', text: 'Earn $500', check: (s) => s.money >= 500, requires: 'first_build' },
+  { id: 'pop_200', text: 'Reach 200 population', check: (s) => s.population >= 200, requires: 'first_build' },
+  { id: 'park_built', text: 'Build a Park or Green Roof', check: (s) => s.grid.some(r => r.some(c => c && (c.id === 'park' || c.id === 'green_roof'))), requires: 'pop_200' },
+  { id: 'first_event', text: 'Organize your first event', check: (s) => s.eventsOrganized.length >= 1, requires: 'money_500' },
+  { id: 'money_5k', text: 'Save up $5,000', check: (s) => s.money >= 5000, requires: 'first_event' },
+  { id: 'renewable_built', text: 'Build a renewable energy building', check: (s) => s.grid.some(r => r.some(c => c && c.renewableBoost > 0)), requires: 'first_event' },
+  { id: 'happiness_60', text: 'Reach 60% happiness', check: (s) => s.happiness >= 60, requires: 'park_built' },
+  { id: 'pop_5k', text: 'Reach 5,000 population', check: (s) => s.population >= 5000, requires: 'pop_200' },
+  { id: 'survive_disaster', text: 'Survive a natural disaster', check: (s) => Object.values(s.disasterLevels).some(l => l >= 1), requires: 'money_500' },
+  { id: 'money_50k', text: 'Amass $50,000', check: (s) => s.money >= 50000, requires: 'money_5k' },
+  { id: 'terrain_cleared', text: 'Clear a terrain tile', check: (s) => Object.keys(s.terrainClearing).length === 0 && Object.keys(s.terrainMap).length < 16, requires: 'money_5k' },
+  { id: 'event_5', text: 'Organize 5 events', check: (s) => s.eventsOrganized.length >= 5, requires: 'first_event' },
+  { id: 'renewable_50', text: 'Reach 50% renewable energy', check: (s) => s.renewablePct >= 50, requires: 'renewable_built' },
+  { id: 'money_500k', text: 'Grow treasury to $500,000', check: (s) => s.money >= 500000, requires: 'money_50k' },
+  { id: 'pop_500k', text: 'Reach 500,000 population', check: (s) => s.population >= 500000, requires: 'pop_5k' },
+  { id: 'resilience_50', text: 'Reach 50% resilience', check: (s) => s.resilience >= 50, requires: 'survive_disaster' },
+  { id: 'event_10', text: 'Organize all 10 events', check: (s) => s.eventsOrganized.length >= 10, requires: 'event_5' },
+  { id: 'renewable_95', text: 'Reach 95% renewable energy', check: (s) => s.renewablePct >= 95, requires: 'renewable_50' },
+  { id: 'money_10M', text: 'Reach $10,000,000', check: (s) => s.money >= 10000000, requires: 'money_500k' },
 ];
 
 const ADVISORY_TRIGGERS: Array<{ id: string; check: (state: GameState, prev: GameMeters) => boolean; message: string; canRepeat?: boolean }> = [
   { id: 'first_done', check: (s) => s.grid.some(r => r.some(c => c !== null)) && s.justCompleted.length > 0, message: 'Income is now active! Check your money meter.' },
-  { id: 'tsunami_hint', check: (s) => s.disasterLevels.tsunami > 1, message: '🌊 Tsunami hit! Build Seawalls (edge tiles) and Wave Absorbers to protect your coast.' },
-  { id: 'quake_hint', check: (s) => s.disasterLevels.earthquake > 1, message: '🔥 Earthquake struck! Emergency Centers, Parks, and Resilience reduce building destruction.' },
-  { id: 'drought_hint', check: (s) => s.disasterLevels.drought > 1, message: '☀️ Drought! Parks save population. Build more green spaces.' },
-  { id: 'smog_hint', check: (s) => s.disasterLevels.smog > 1, message: '💨 Smog! Build clean energy (Solar, Wind) and Recycling Centers.' },
+  { id: 'tsunami_hint', check: (s) => s.disasterLevels.tsunami >= 1, message: '🌊 Tsunami hit! Build Seawalls (edge tiles) and Wave Absorbers to protect your coast.' },
+  { id: 'quake_hint', check: (s) => s.disasterLevels.earthquake >= 1, message: '🔥 Earthquake struck! Emergency Centers, Parks, and Resilience reduce building destruction.' },
+  { id: 'drought_hint', check: (s) => s.disasterLevels.drought >= 1, message: '☀️ Drought! Parks save population. Build more green spaces.' },
+  { id: 'smog_hint', check: (s) => s.disasterLevels.smog >= 1, message: '💨 Smog! Build clean energy (Solar, Wind) and Recycling Centers.' },
   { id: 'money_warn', check: (s) => s.warnings.some(w => w.type === 'money'), message: '⚠️ Money low! Build economic buildings (House, Shop) to earn income.', canRepeat: true },
   { id: 'pop_warn', check: (s) => s.warnings.some(w => w.type === 'population'), message: '⚠️ Population dropping! Provide more housing — build Houses or Shops.', canRepeat: true },
   { id: 'pollution_warn', check: (s) => s.warnings.some(w => w.type === 'pollution'), message: '⚠️ Pollution critical! Build Parks, Green Roofs, or Renewable energy.', canRepeat: true },
   { id: 'happiness_warn', check: (s) => s.warnings.some(w => w.type === 'happiness'), message: '⚠️ Citizens unhappy! Add Parks, Green Roofs, and reduce pollution.', canRepeat: true },
   { id: 'overcrowding', check: (s) => { const ec = countBuildings(s.grid, 'economic'); const gc = countBuildings(s.grid, 'green'); const hc = ec * 250 + gc * 50; return hc > 0 && s.population > hc; }, message: '🏘️ Overcrowding! Build more Houses or Shops to provide adequate housing.', canRepeat: true },
   { id: 'disaster_prepare', check: (s) => s.disasterWarning !== null, message: 'A disaster is coming! Tap 📚 Prepare to answer 5 questions and reduce the damage.' },
+  { id: 'events_intro', check: (s) => s.money >= 500 && s.eventsOrganized.length === 0 && Object.keys(s.eventTimers).length === 0, message: '🎪 You can now organize events! Switch to the Events tab in the left sidebar to see available community events that permanently boost your meters.' },
 ];
 
 function findTerrainPartner(tm: Record<string, TerrainTile>, r: number, c: number): string | null {
@@ -293,12 +335,19 @@ export const useGameStore = create<GameState>((set) => ({
   constructionMap: {}, terrainMap: generateTerrain(), terrainClearing: {},
   pendingRemoval: null,
   disasterWarning: null, disasterActive: null,
-  disasterLevels: { tsunami: 1, earthquake: 1, drought: 1, smog: 1 },
+    disasterLevels: { tsunami: 0, earthquake: 0, drought: 0, smog: 0 },
   disasterMinigame: null, minigameScore: 0, minigamePlayed: false,
   resilienceDecay: 0,
   meterOffsets: { pollution: 0, happiness: 0, renewablePct: 0, resilience: 0 },
   meterDeltas: {}, justCompleted: [], destroyedTiles: [],
   completedObjectives: [], seenAdvisories: [] as { id: string; message: string }[], repeatableAdvisories: [],
+  eventsOrganized: [], eventTimers: {},
+  activeBuffs: { ...DEFAULT_BUFFS },
+  devDisasterLevel: 1,
+  devShowAllGoals: false,
+  devShowAllEventViews: false,
+  eventPopups: [] as import('../types').EventPopupData[],
+  prePopupSpeed: 1,
 
   selectBuilding: (b) => set({ selectedBuilding: b }),
 
@@ -318,7 +367,7 @@ export const useGameStore = create<GameState>((set) => ({
       money: state.money - b.cost, population: state.population,
       pollution: state.pollution, happiness: state.happiness,
       renewablePct: state.renewablePct, resilience: state.resilience,
-    });
+    }, state.activeBuffs);
     return { grid: newGrid, constructionMap: newCMap, ...m };
   }),
 
@@ -332,7 +381,7 @@ export const useGameStore = create<GameState>((set) => ({
     const meters = recalculateMeters(active, {
       money: state.money, population: state.population, pollution: state.pollution,
       happiness: state.happiness, renewablePct: state.renewablePct, resilience: state.resilience,
-    });
+    }, state.activeBuffs);
     return { grid: newGrid, constructionMap: newCMap,
       population: meters.population, pollution: meters.pollution,
       happiness: meters.happiness, renewablePct: meters.renewablePct, resilience: meters.resilience,
@@ -362,6 +411,30 @@ export const useGameStore = create<GameState>((set) => ({
     };
   }),
 
+  organizeEvent: (eventId) => set((state) => {
+    if (state.gameResult) return state;
+    const event = EVENTS.find(e => e.id === eventId);
+    if (!event) return state;
+    // Already organized or in progress
+    if (state.eventsOrganized.includes(eventId)) return state;
+    if (state.eventTimers[eventId] !== undefined) return state;
+    // Can afford?
+    if (state.money < event.cost) return state;
+    // Check conditions
+    const c = event.conditions;
+    if (c.population !== undefined && state.population < c.population) return state;
+    if (c.happiness !== undefined && state.happiness < c.happiness) return state;
+    if (c.pollution !== undefined && state.pollution > c.pollution) return state;
+    if (c.renewablePct !== undefined && state.renewablePct < c.renewablePct) return state;
+    if (c.resilience !== undefined && state.resilience < c.resilience) return state;
+    if (c.money !== undefined && state.money < c.money) return state;
+
+    return {
+      money: state.money - event.cost,
+      eventTimers: { ...state.eventTimers, [eventId]: event.duration },
+    };
+  }),
+
   tick: () => set((state) => {
     if (state.gameResult) return state;
 
@@ -383,10 +456,46 @@ export const useGameStore = create<GameState>((set) => ({
       if (v === 1) { const t2 = { ...newTM }; delete t2[k]; newTM = t2; }
     }
 
+    // Process event timers
+    let eventsOrganized = state.eventsOrganized;
+    let activeBuffs = { ...state.activeBuffs };
+    const newPopups: Array<{ id: string; name: string; emoji: string; color: string; description: string; effects: string[] }> = [];
+    const newEventTimers: Record<string, number> = {};
+    for (const [id, remaining] of Object.entries(state.eventTimers)) {
+      if (remaining <= 1) {
+        // Event completes
+        eventsOrganized = [...eventsOrganized, id];
+        const ev = EVENTS.find(e => e.id === id);
+        if (ev) {
+          // Stack multipliers
+          if (ev.effects.incomeMultiplier) activeBuffs.incomeMultiplier *= ev.effects.incomeMultiplier;
+          if (ev.effects.happinessMultiplier) activeBuffs.happinessMultiplier *= ev.effects.happinessMultiplier;
+          if (ev.effects.resilienceMultiplier) activeBuffs.resilienceMultiplier *= ev.effects.resilienceMultiplier;
+          if (ev.effects.renewableMultiplier) activeBuffs.renewableMultiplier *= ev.effects.renewableMultiplier;
+          if (ev.effects.pollutionMultiplier) activeBuffs.pollutionMultiplier *= ev.effects.pollutionMultiplier;
+          if (ev.effects.popCapMultiplier) activeBuffs.popCapMultiplier *= ev.effects.popCapMultiplier;
+          if (ev.effects.popGrowthMultiplier) activeBuffs.popGrowthMultiplier *= ev.effects.popGrowthMultiplier;
+          // Build effects list for popup
+          const effs: string[] = [];
+          if (ev.effects.incomeMultiplier) effs.push(`💰 Income ×${ev.effects.incomeMultiplier}`);
+          if (ev.effects.happinessMultiplier) effs.push(`😊 Happiness ×${ev.effects.happinessMultiplier}`);
+          if (ev.effects.resilienceMultiplier) effs.push(`🛡️ Resilience ×${ev.effects.resilienceMultiplier}`);
+          if (ev.effects.renewableMultiplier) effs.push(`⚡ Renewable ×${ev.effects.renewableMultiplier}`);
+          if (ev.effects.popCapMultiplier) effs.push(`🏘️ Pop Cap ×${ev.effects.popCapMultiplier}`);
+          if (ev.effects.popGrowthMultiplier) effs.push(`📈 Pop Growth ×${ev.effects.popGrowthMultiplier}`);
+          if (ev.effects.pollutionMultiplier && ev.effects.pollutionMultiplier < 1) effs.push(`🌿 Pollution ×${ev.effects.pollutionMultiplier}`);
+          newPopups.push({ id: ev.id, name: ev.name, emoji: ev.emoji, color: ev.color, description: ev.popupDescription || ev.description, effects: effs });
+        }
+      } else {
+        newEventTimers[id] = remaining - 1;
+      }
+    }
+
     // Disaster logic
     let disasterWarning = state.disasterWarning;
     let disasterActive = state.disasterActive;
     let disasterLevels = { ...state.disasterLevels };
+    const currentDisasterLevel = deriveDisasterLevel(eventsOrganized.length);
     let minigamePlayed = state.minigamePlayed;
     let gridAfterDisaster = state.grid.map(r => [...r]);
     let extraMeters: Partial<GameMeters> = {};
@@ -406,19 +515,17 @@ export const useGameStore = create<GameState>((set) => ({
     if (!disasterWarning && !disasterActive && state.tickCount > 0 && Math.random() < 0.3) {
       const types: DisasterType[] = ['tsunami', 'earthquake', 'drought', 'smog'];
       const type = types[Math.floor(Math.random() * types.length)];
-      const lvl = disasterLevels[type];
-      disasterWarning = { type, message: `⚠️ Level ${lvl} ${DISASTER_MESSAGES[type]}`, daysLeft: maxWarning };
+      disasterWarning = { type, message: `⚠️ Level ${currentDisasterLevel} ${DISASTER_MESSAGES[type]}`, daysLeft: maxWarning };
       minigamePlayed = false;
     } else if (disasterWarning) {
       const remaining = disasterWarning.daysLeft - 1;
       if (remaining <= 0) {
         const dw = disasterWarning!;
-        const lvl = disasterLevels[dw.type];
-        const result = applyDisaster({ grid: gridAfterDisaster, meters: state }, dw.type, lvl, state.minigameScore);
+        const result = applyDisaster({ grid: gridAfterDisaster, meters: state }, dw.type, currentDisasterLevel, state.minigameScore);
         gridAfterDisaster = result.grid;
         extraMeters = result.meters;
         destroyedTiles = result.destroyed;
-        disasterLevels[dw.type] = Math.min(lvl + 1, 5);
+        if (!dw.isDev) disasterLevels[dw.type] = Math.max(disasterLevels[dw.type], currentDisasterLevel);
         disasterWarning = null;
         disasterActive = { type: dw.type, daysLeft: 3 };
       } else {
@@ -434,7 +541,7 @@ export const useGameStore = create<GameState>((set) => ({
       happiness: (extraMeters.happiness ?? state.happiness),
       renewablePct: (extraMeters.renewablePct ?? state.renewablePct),
       resilience: (extraMeters.resilience ?? state.resilience),
-    });
+    }, activeBuffs);
 
     // Resilience decay: -1 every 3 days
     let resilienceDecay = (state.resilienceDecay ?? 0) + 1;
@@ -446,7 +553,7 @@ export const useGameStore = create<GameState>((set) => ({
     // Overcrowding happiness penalty: -2 per 10% over housing capacity
     const ecoC = countBuildings(active, 'economic');
     const greenC = countBuildings(active, 'green');
-    const hCap = ecoC * 250 + greenC * 50;
+    const hCap = Math.floor((ecoC * 250 + greenC * 50) * activeBuffs.popCapMultiplier);
     if (hCap > 0 && meters.population > hCap) {
       const overPct = Math.floor((meters.population - hCap) / hCap * 10);
       meters.happiness = Math.max(0, meters.happiness - overPct * 2);
@@ -483,6 +590,11 @@ export const useGameStore = create<GameState>((set) => ({
       }
     }
 
+    // Pause if event popups are queued
+    const popups = [...state.eventPopups, ...newPopups];
+    const shouldPause = popups.length > 0 && state.gameSpeed > 0;
+    const preSpeed = shouldPause ? state.gameSpeed : state.prePopupSpeed;
+
     return {
       ...meters, grid: gridAfterDisaster, terrainMap: newTM,
       terrainClearing: newTClear, tickCount: state.tickCount + 1,
@@ -492,6 +604,9 @@ export const useGameStore = create<GameState>((set) => ({
       resilienceDecay, minigamePlayed,
       completedObjectives, seenAdvisories,
       repeatableAdvisories,
+      eventsOrganized, eventTimers: newEventTimers, activeBuffs,
+      eventPopups: popups, prePopupSpeed: preSpeed,
+      gameSpeed: shouldPause ? 0 : preSpeed,
       gameResult: gameOver || (won ? 'win' : null),
       hasWon: state.hasWon || (won ? true : false),
       minigameScore: destroyedTiles.length > 0 ? 0 : state.minigameScore,
@@ -534,17 +649,49 @@ export const useGameStore = create<GameState>((set) => ({
 
   startDisaster: (type) =>
     set((state) => {
-      const lvl = state.disasterLevels[type];
+      const lvl = state.devDisasterLevel;
       return {
-        disasterWarning: { type, message: `⚠️ Dev: Level ${lvl} ${type}`, daysLeft: 2 },
+        disasterWarning: { type, message: `⚠️ Dev: Level ${lvl} ${type}`, daysLeft: 2, isDev: true },
         disasterActive: null,
       };
     }),
 
+  setDevDisasterLevel: (level) => set({ devDisasterLevel: Math.max(1, Math.min(5, level)) }),
+
+  toggleShowAllGoals: () => set((s) => ({ devShowAllGoals: !s.devShowAllGoals })),
+
+  toggleShowAllEventViews: () => set((s) => ({ devShowAllEventViews: !s.devShowAllEventViews })),
+
+  dismissEventPopup: () => set((s) => {
+    const remaining = s.eventPopups.slice(1);
+    return {
+      eventPopups: remaining,
+      gameSpeed: remaining.length === 0 ? s.prePopupSpeed : 0,
+    };
+  }),
+
+  showEventPopup: (eventId) => set((s) => {
+    const ev = EVENTS.find(e => e.id === eventId);
+    if (!ev) return s;
+    const effs: string[] = [];
+    if (ev.effects.incomeMultiplier) effs.push(`💰 Income ×${ev.effects.incomeMultiplier}`);
+    if (ev.effects.happinessMultiplier) effs.push(`😊 Happiness ×${ev.effects.happinessMultiplier}`);
+    if (ev.effects.resilienceMultiplier) effs.push(`🛡️ Resilience ×${ev.effects.resilienceMultiplier}`);
+    if (ev.effects.renewableMultiplier) effs.push(`⚡ Renewable ×${ev.effects.renewableMultiplier}`);
+    if (ev.effects.popCapMultiplier) effs.push(`🏘️ Pop Cap ×${ev.effects.popCapMultiplier}`);
+    if (ev.effects.popGrowthMultiplier) effs.push(`📈 Pop Growth ×${ev.effects.popGrowthMultiplier}`);
+    if (ev.effects.pollutionMultiplier && ev.effects.pollutionMultiplier < 1) effs.push(`🌿 Pollution ×${ev.effects.pollutionMultiplier}`);
+    return {
+      eventPopups: [{ id: ev.id, name: ev.name, emoji: ev.emoji, color: ev.color, description: ev.popupDescription || ev.description, effects: effs }],
+      prePopupSpeed: s.gameSpeed > 0 ? s.gameSpeed : s.prePopupSpeed,
+      gameSpeed: 0,
+    };
+  }),
+
   adjustMeter: (meter, amount) =>
     set((state) => {
       const current = state[meter] as number;
-      const clamped = Math.max(0, Math.min(meter === 'money' ? 999999 : meter === 'population' ? 999999 : 100, current + amount));
+      const clamped = Math.max(0, Math.min(meter === 'money' ? 99999999 : meter === 'population' ? 9999999 : 100, current + amount));
       // For formula-computed meters, store the offset so it persists across ticks
       if (meter === 'pollution' || meter === 'happiness' || meter === 'renewablePct' || meter === 'resilience') {
         const offsets = { ...state.meterOffsets, [meter]: (state.meterOffsets[meter] || 0) + amount };
@@ -567,7 +714,7 @@ export const useGameStore = create<GameState>((set) => ({
       const meters = recalculateMeters(active, {
         money: state.money, population: state.population, pollution: state.pollution,
         happiness: state.happiness, renewablePct: state.renewablePct, resilience: state.resilience,
-      });
+      }, state.activeBuffs);
       return { grid: newGrid, constructionMap: newCMap, pendingRemoval: null,
         population: meters.population, pollution: meters.pollution,
         happiness: meters.happiness, renewablePct: meters.renewablePct, resilience: meters.resilience,
@@ -576,6 +723,38 @@ export const useGameStore = create<GameState>((set) => ({
     }),
 
   cancelRemoval: () => set({ pendingRemoval: null }),
+
+  instantComplete: () => set((state) => {
+    if (state.gameResult) return state;
+    // Clear in-progress terrain clearing — remove terrain from map
+    let newTM = state.terrainMap;
+    for (const [k, v] of Object.entries(state.terrainClearing)) {
+      if (v > 0) { const t2 = { ...newTM }; delete t2[k]; newTM = t2; }
+    }
+    // Complete in-progress events
+    let eventsOrganized = state.eventsOrganized;
+    let activeBuffs = { ...state.activeBuffs };
+    for (const id of Object.keys(state.eventTimers)) {
+      eventsOrganized = [...eventsOrganized, id];
+      const ev = EVENTS.find(e => e.id === id);
+      if (ev) {
+        if (ev.effects.incomeMultiplier) activeBuffs.incomeMultiplier *= ev.effects.incomeMultiplier;
+        if (ev.effects.happinessMultiplier) activeBuffs.happinessMultiplier *= ev.effects.happinessMultiplier;
+        if (ev.effects.resilienceMultiplier) activeBuffs.resilienceMultiplier *= ev.effects.resilienceMultiplier;
+        if (ev.effects.renewableMultiplier) activeBuffs.renewableMultiplier *= ev.effects.renewableMultiplier;
+        if (ev.effects.pollutionMultiplier) activeBuffs.pollutionMultiplier *= ev.effects.pollutionMultiplier;
+        if (ev.effects.popCapMultiplier) activeBuffs.popCapMultiplier *= ev.effects.popCapMultiplier;
+        if (ev.effects.popGrowthMultiplier) activeBuffs.popGrowthMultiplier *= ev.effects.popGrowthMultiplier;
+      }
+    }
+    // Clear construction and terrain timers
+    const active = gridWithoutConstruction(state.grid, {});
+    const meters = recalculateMeters(active, {
+      money: state.money, population: state.population, pollution: state.pollution,
+      happiness: state.happiness, renewablePct: state.renewablePct, resilience: state.resilience,
+    }, activeBuffs);
+    return { constructionMap: {}, terrainClearing: {}, terrainMap: newTM, eventTimers: {}, eventsOrganized, activeBuffs, ...meters };
+  }),
 
   startMinigame: () => set((state) => {
     if (!state.disasterWarning || state.disasterMinigame) return state;
@@ -619,12 +798,18 @@ export const useGameStore = create<GameState>((set) => ({
   constructionMap: {}, terrainMap: generateTerrain(), terrainClearing: {},
   pendingRemoval: null,
     disasterWarning: null, disasterActive: null,
-    disasterLevels: { tsunami: 1, earthquake: 1, drought: 1, smog: 1 },
+  disasterLevels: { tsunami: 0, earthquake: 0, drought: 0, smog: 0 },
   disasterMinigame: null, minigameScore: 0, minigamePlayed: false,
     resilienceDecay: 0,
     meterOffsets: { pollution: 0, happiness: 0, renewablePct: 0, resilience: 0 },
     meterDeltas: {}, justCompleted: [], destroyedTiles: [],
   completedObjectives: [], seenAdvisories: [] as { id: string; message: string }[], repeatableAdvisories: [],
+    eventsOrganized: [], eventTimers: {}, activeBuffs: { ...DEFAULT_BUFFS },
+    devDisasterLevel: 1,
+    devShowAllGoals: false,
+    devShowAllEventViews: false,
+    eventPopups: [] as import('../types').EventPopupData[],
+    prePopupSpeed: 1,
   }),
 
   continueGame: () => set({ gameResult: null, gameSpeed: 1, hasWon: true }),
