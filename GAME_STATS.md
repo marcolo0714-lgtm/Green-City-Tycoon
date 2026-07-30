@@ -64,8 +64,8 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 Bike L
 | #4 | Solar Mega-Farm, Office Tower |
 | #5 | Transit Hub, Metro Hub |
 | #6 | Vertical Farm, Vertical Forest Tower |
-| #7 | Desalination, Wave Converter, Water Reclamation |
-| #8 | Research Lab, Observatory, Emergency Center, Research Hub |
+| #7 | Desalination, Wave Converter |
+| #8 | Research Lab, Observatory, Emergency Center |
 | #9 | Factory, Smart Grid Center, Global Trade Hub |
 | #10 | World Peace Garden |
 
@@ -82,7 +82,7 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 Bike L
 | Park | $15 | 0 | -3 | +3 | — | — | Green |
 | Green Roof | $25 | 0 | -2 | +2 | — | — | Green |
 | Water Purifier | $35 | 0 | -3 | +2 | — | — | Water |
-| Bike Lane | $25 | 0 | -2 | +2 | — | +1 | Transport |
+| EV Charging Hub | $25 | 0 | -2 | +2 | — | +1 | Transport |
 
 ### Unlockable Buildings
 
@@ -94,7 +94,7 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 Bike L
 | Composting Hub | $35 | +8 | -3 | +1 | — | — | Waste | #2 |
 | Seawall | $300 | 0 | 0 | +1 | +8 | — | Coastal | #3 |
 | Wave Absorber | $350 | 0 | 0 | +2 | +10 | — | Coastal | #3 |
-| Solar Mega-Farm | $200 | +20 | -5 | — | +2 | +6 | Energy | #4 |
+| Geothermal Plant | $200 | +20 | -5 | — | +2 | +6 | Energy | #4 |
 | Office Tower | $150 | +25 | **+6** | +2 | — | — | Economic | #4 |
 | Transit Hub | $120 | +15 | -3 | +2 | +1 | +2 | Transport | #5 |
 | Metro Hub | $250 | +30 | -4 | — | +2 | — | Transport | #5 |
@@ -102,11 +102,9 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 Bike L
 | Vertical Forest | $350 | +20 | -8 | +5 | +1 | — | Green | #6 |
 | Desalination | $300 | +18 | -5 | +2 | +3 | — | Water | #7 |
 | Wave Converter | $280 | +15 | -3 | — | +2 | +4 | Energy | #7 |
-| Water Reclamation | $450 | +25 | -6 | — | +5 | — | Water | #7 |
 | Research Lab | $400 | +18 | -4 | +1 | +3 | +3 | Science | #8 |
 | Observatory | $350 | 0 | -2 | +2 | +5 | — | Science | #8 |
 | Emergency Center | $500 | 0 | 0 | +1 | +10 | — | Science | #8 |
-| Research Hub | $600 | +30 | -6 | — | +5 | +5 | Science | #8 |
 | Factory | $400 | +35 | **+15** | -2 | — | — | Economic | #9 |
 | Smart Grid Center | $800 | +40 | -4 | — | +5 | +5 | Energy | #9 |
 | Global Trade Hub | $1,500 | +80 | 0 | +5 | +3 | — | Economic | #9 |
@@ -192,12 +190,33 @@ decay: -1 every 3 days
 
 ## Educational Minigame
 
-When a disaster warning appears, a blue **📚 Prepare (5 Qs)** button appears. Tapping it opens a chalkboard-themed overlay with a 🧑‍🏫 teacher character.
+When a disaster warning appears, a ⚠️ **Prepare (4 Qs)** button pulses in red. Tapping it opens a chalkboard-themed overlay with a 🧑‍🏫 teacher character.
 
-### Gameplay
-- **5 questions** (2 disaster-specific + 3 random), 4 choices each
-- Game **pauses** during minigame, **resumes** afterward
-- Each correct answer reduces disaster damage
+### Flow
+1. **Intro screen** — Teacher introduces the disaster type and explains reducing damage
+2. **Quiz (4 questions)** — 2 disaster-specific + 2 random, 4 choices each
+3. **Results screen** — Teacher shows score and damage reduction stats
+4. Game **pauses** during minigame, **resumes** after closing
+
+### Damage Reduction (Percentage-Based)
+
+Score M (0-4) applies a multiplier to **all** disaster damage: `pct = 1 − M × 0.175`
+
+| Minigame Score | 0 (skip) | 2 | 3 | 4 (perfect) |
+|---|---|---|---|---|
+| **Damage Taken** | 100% | 65% | 47.5% | **30%** |
+| **Reduction** | 0% | 35% | 52.5% | **70%** |
+
+Applies to: money loss, resilience loss, happiness loss, population loss, pollution increase.
+
+### Preparedness Stats (on-screen)
+After the quiz, a stats box shows during the warning phase:
+```
+📋 Preparedness Results
+Correct           3 / 4
+Damage Reduction  52%
+```
+After the disaster strikes, replaced by a **Damage Report** box showing actual impact (buildings lost, money, population, etc.).
 
 ### Question Pools (110 total)
 
@@ -225,18 +244,10 @@ Random: **30% chance per day** (no active warning/disaster).
 Base 2 days, +1 per science building (max 5). Shows "⚠️ Level N [Type]".
 
 ### Active Phase (3 days)
-Destroyed buildings flash red.
+Destroyed buildings flash red. Damage report box shown on screen.
 
-### Minigame Damage Reduction (Percentage-Based)
-
-Score M (0-5) applies a multiplier to **all** disaster damage: `pct = 1 − M × 0.14`
-
-| Minigame Score | 0 (skip) | 2 | 3 | 5 (perfect) |
-|---|---|---|---|---|
-| **Damage Taken** | 100% | 72% | 58% | **30%** |
-| **Reduction** | 0% | 28% | 42% | **70%** |
-
-This applies to: money loss, resilience loss, happiness loss, population loss, and pollution increase.
+### Minigame Damage Reduction
+Score M (0-4) reduces all damage by `M × 17.5%` — max 70% at perfect score.
 
 ### 🌊 Tsunami
 
@@ -245,12 +256,12 @@ Base values (before minigame reduction):
 | Level | Edge range | Cost/bldg | Resilience | Happiness | Seawall blocks |
 |---|---|---|---|---|---|
 | 1 | 1 tile | $500 | -15 | -5 | Yes |
-| 2 | 1 tile | $2,000 | -25 | -8 | Yes |
-| 3 | 2 tiles | $8,000 | -40 | -12 | Yes |
-| 4 | 2 tiles | $30,000 | -60 | -18 | Yes |
-| 5 | 3 tiles | **$100,000** | -90 | -30 | **No** |
+| 2 | 1 tile | **$3,000** | **-30** | **-10** | Yes |
+| 3 | 2 tiles | **$15,000** | **-50** | **-18** | Yes |
+| 4 | 2 tiles | **$60,000** | **-75** | **-30** | Yes |
+| 5 | 3 tiles | **$200,000** | -90 | **-45** | **No** |
 
-Seawall/Wave Absorber within 1 tile protects unless bypassed. M=5 → $30K/bldg at L5.
+Seawall/Wave Absorber within 1 tile protects unless bypassed (L5). M=4 → $60K/bldg at L5, ~$300K total for 5 buildings.
 
 ### 🔥 Earthquake
 
@@ -258,16 +269,18 @@ Base values:
 
 | Level | Max destroy | Cost/bldg | Resilience | Happiness |
 |---|---|---|---|---|
-| 1 | 1 | $300 | -10 | -4 |
-| 2 | 2 | $1,500 | -18 | -6 |
-| 3 | 3 | $6,000 | -30 | -10 |
-| 4 | 4 | $25,000 | -50 | -15 |
-| 5 | 5 | **$80,000** | -80 | -25 |
+| 1 | **4** | $300 | **-10** | **-4** |
+| 2 | **6** | **$2,000** | **-25** | **-8** |
+| 3 | **9** | **$8,000** | **-45** | **-15** |
+| 4 | **13** | **$30,000** | **-70** | **-25** |
+| 5 | **20** | **$100,000** | -90 | **-40** |
 
 **Defenses reduce destruction:**
 - Emergency Center: -1 destroyed
 - Every 2 Parks: -1 destroyed
 - Every 20 resilience: -1 destroyed (minimum 1)
+
+M=4 → L5: 6 buildings destroyed, $30K/bldg, ~$180K total.
 
 ### ☀️ Drought
 
@@ -275,13 +288,13 @@ Base values:
 
 | Level | Pop loss | Happiness | Money |
 |---|---|---|---|
-| 1 | 5 | -8 | $300 |
-| 2 | 10 | -12 | $1,500 |
-| 3 | 20 | -18 | $6,000 |
-| 4 | 40 | -30 | $25,000 |
-| 5 | **80** | **-50** | **$80,000** |
+| 1 | **5** | **-8** | **$500** |
+| 2 | **30** | **-15** | **$5,000** |
+| 3 | **200** | **-25** | **$30,000** |
+| 4 | **2,000** | **-40** | **$150,000** |
+| 5 | **100,000** | **-60** | **$500,000** |
 
-Defense: each Park saves 1 population (max 5). M=5 → L5 pop loss = 24 (80 × 0.3), money = $24K.
+Defense: each Park saves 1 population (max 5). M=4 → L5 pop loss = 30K, money = $150K.
 
 ### 💨 Smog
 
@@ -289,13 +302,13 @@ Base values:
 
 | Level | Pollution | Pop loss | Happiness |
 |---|---|---|---|
-| 1 | +15 | 3 | 3 |
-| 2 | +28 | 6 | 6 |
-| 3 | +45 | 12 | 12 |
-| 4 | +65 | 25 | 25 |
-| 5 | **+90** | **60** | **45** |
+| 1 | +15 | **3** | **-3** |
+| 2 | **+30** | **10** | **-10** |
+| 3 | **+50** | **30** | **-20** |
+| 4 | **+75** | **100** | **-40** |
+| 5 | **+95** | **500** | **-60** |
 
-Defense: each clean-energy building reduces pollution hit by 2 and pop/happiness loss by 1. M=5 → L5 pollution = +27 (90 × 0.3).
+Defense: each clean-energy building reduces pollution hit by 2 and pop/happiness loss by 1. M=4 → L5 pollution = +29, pop loss = 150.
 
 ---
 

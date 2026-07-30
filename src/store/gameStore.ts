@@ -187,20 +187,21 @@ function applyDisaster(
   const destroyed: string[] = [];
   const L = level;
   const M = minigameScore;
-  const pct = 1 - M * 0.14; // M=0 → 100%, M=5 → 30% damage
+  const pct = 1 - M * 0.175; // M=0 → 100%, M=4 → 30% damage
 
-  const TSUNAMI_COST = [500, 2000, 8000, 30000, 100000];
-  const EARTHQUAKE_COST = [300, 1500, 6000, 25000, 80000];
-  const DROUGHT_MONEY = [300, 1500, 6000, 25000, 80000];
-  const TSUNAMI_RES = [15, 25, 40, 60, 90];
-  const TSUNAMI_HAP = [5, 8, 12, 18, 30];
-  const EQ_RES = [10, 18, 30, 50, 80];
-  const EQ_HAP = [4, 6, 10, 15, 25];
-  const DROUGHT_POP = [5, 10, 20, 40, 80];
-  const DROUGHT_HAP = [8, 12, 18, 30, 50];
-  const SMOG_POL = [15, 28, 45, 65, 90];
-  const SMOG_POP = [3, 6, 12, 25, 60];
-  const SMOG_HAP = [3, 6, 12, 25, 45];
+  const TSUNAMI_COST = [500, 3000, 15000, 60000, 200000];
+  const EARTHQUAKE_COST = [300, 2000, 8000, 30000, 100000];
+  const EARTHQUAKE_MAX = [4, 6, 9, 13, 20];
+  const DROUGHT_MONEY = [500, 5000, 30000, 150000, 500000];
+  const TSUNAMI_RES = [15, 30, 50, 75, 90];
+  const TSUNAMI_HAP = [5, 10, 18, 30, 45];
+  const EQ_RES = [10, 25, 45, 70, 90];
+  const EQ_HAP = [4, 8, 15, 25, 40];
+  const DROUGHT_POP = [5, 30, 200, 2000, 100000];
+  const DROUGHT_HAP = [8, 15, 25, 40, 60];
+  const SMOG_POL = [15, 30, 50, 75, 95];
+  const SMOG_POP = [3, 10, 30, 100, 500];
+  const SMOG_HAP = [3, 10, 20, 40, 60];
 
   if (type === 'tsunami') {
     let destCount = 0;
@@ -234,7 +235,7 @@ function applyDisaster(
     m.resilience = Math.max(0, m.resilience - Math.round(TSUNAMI_RES[L - 1] * pct));
     m.happiness = Math.max(0, m.happiness - Math.round(TSUNAMI_HAP[L - 1] * pct));
   } else if (type === 'earthquake') {
-    const maxDestroy = L;
+    const maxDestroy = EARTHQUAKE_MAX[L - 1];
     const emergencyCount = countSpecific(grid, b => b.id === 'emergency_center');
     const parkCount = countSpecific(grid, b => b.shape === 'park');
     const resilienceBlock = Math.floor(m.resilience / 20);
@@ -310,7 +311,7 @@ const ADVISORY_TRIGGERS: Array<{ id: string; check: (state: GameState, prev: Gam
   { id: 'pop_warn', check: (s) => s.warnings.some(w => w.type === 'population'), message: '⚠️ Population dropping! Provide more housing — build Houses or Shops.', canRepeat: true },
   { id: 'pollution_warn', check: (s) => s.warnings.some(w => w.type === 'pollution'), message: '⚠️ Pollution critical! Build Parks, Green Roofs, or Renewable energy.', canRepeat: true },
   { id: 'happiness_warn', check: (s) => s.warnings.some(w => w.type === 'happiness'), message: '⚠️ Citizens unhappy! Add Parks, Green Roofs, and reduce pollution.', canRepeat: true },
-  { id: 'overcrowding', check: (s) => { const ec = countBuildings(s.grid, 'economic'); const gc = countBuildings(s.grid, 'green'); const hc = ec * 250 + gc * 50; return hc > 0 && s.population > hc; }, message: '🏘️ Overcrowding! Build more Houses or Shops to provide adequate housing.', canRepeat: true },
+  { id: 'overcrowding', check: (s) => { const ec = countBuildings(s.grid, 'economic'); const gc = countBuildings(s.grid, 'green'); const hc = Math.floor((ec * 250 + gc * 50) * s.activeBuffs.popCapMultiplier); return hc > 0 && s.population > hc; }, message: '🏘️ Overcrowding! Build more Houses or Shops to provide adequate housing.', canRepeat: true },
   { id: 'disaster_prepare', check: (s) => s.disasterWarning !== null, message: 'A disaster is coming! Tap 📚 Prepare to answer 5 questions and reduce the damage.' },
   { id: 'events_intro', check: (s) => s.money >= 500 && s.eventsOrganized.length === 0 && Object.keys(s.eventTimers).length === 0, message: '🎪 You can now organize events! Switch to the Events tab in the left sidebar to see available community events that permanently boost your meters.' },
 ];
@@ -337,7 +338,7 @@ export const useGameStore = create<GameState>((set) => ({
   disasterWarning: null, disasterActive: null,
     disasterLevels: { tsunami: 0, earthquake: 0, drought: 0, smog: 0 },
   disasterMinigame: null, minigameScore: 0, minigamePlayed: false,
-  resilienceDecay: 0,
+  minigameStats: null, damageReport: null, resilienceDecay: 0,
   meterOffsets: { pollution: 0, happiness: 0, renewablePct: 0, resilience: 0 },
   meterDeltas: {}, justCompleted: [], destroyedTiles: [],
   completedObjectives: [], seenAdvisories: [] as { id: string; message: string }[], repeatableAdvisories: [],
@@ -497,14 +498,16 @@ export const useGameStore = create<GameState>((set) => ({
     let disasterLevels = { ...state.disasterLevels };
     const currentDisasterLevel = deriveDisasterLevel(eventsOrganized.length);
     let minigamePlayed = state.minigamePlayed;
+    let minigameStats = state.minigameStats;
     let gridAfterDisaster = state.grid.map(r => [...r]);
     let extraMeters: Partial<GameMeters> = {};
     let destroyedTiles: string[] = [];
+    let damageReport = state.damageReport;
 
     // Process active disaster
     if (disasterActive) {
       const remaining = disasterActive.daysLeft - 1;
-      if (remaining <= 0) disasterActive = null;
+      if (remaining <= 0) { disasterActive = null; damageReport = null; }
       else disasterActive = { ...disasterActive, daysLeft: remaining };
     }
 
@@ -517,17 +520,28 @@ export const useGameStore = create<GameState>((set) => ({
       const type = types[Math.floor(Math.random() * types.length)];
       disasterWarning = { type, message: `⚠️ Level ${currentDisasterLevel} ${DISASTER_MESSAGES[type]}`, daysLeft: maxWarning };
       minigamePlayed = false;
+      minigameStats = null;
     } else if (disasterWarning) {
       const remaining = disasterWarning.daysLeft - 1;
       if (remaining <= 0) {
         const dw = disasterWarning!;
-        const result = applyDisaster({ grid: gridAfterDisaster, meters: state }, dw.type, currentDisasterLevel, state.minigameScore);
+        const lvl = dw.isDev && dw.devLevel ? dw.devLevel : currentDisasterLevel;
+        const result = applyDisaster({ grid: gridAfterDisaster, meters: state }, dw.type, lvl, state.minigameScore);
         gridAfterDisaster = result.grid;
         extraMeters = result.meters;
         destroyedTiles = result.destroyed;
         if (!dw.isDev) disasterLevels[dw.type] = Math.max(disasterLevels[dw.type], currentDisasterLevel);
         disasterWarning = null;
         disasterActive = { type: dw.type, daysLeft: 3 };
+        // Compute damage report
+        damageReport = {
+          destroyed: destroyedTiles.length,
+          money: state.money - (extraMeters.money ?? state.money),
+          population: state.population - (extraMeters.population ?? state.population),
+          happiness: state.happiness - (extraMeters.happiness ?? state.happiness),
+          resilience: state.resilience - (extraMeters.resilience ?? state.resilience),
+          pollution: (extraMeters.pollution ?? state.pollution) - state.pollution,
+        };
       } else {
         disasterWarning = { ...disasterWarning, daysLeft: remaining };
       }
@@ -592,8 +606,17 @@ export const useGameStore = create<GameState>((set) => ({
 
     // Pause if event popups are queued
     const popups = [...state.eventPopups, ...newPopups];
-    const shouldPause = popups.length > 0 && state.gameSpeed > 0;
-    const preSpeed = shouldPause ? state.gameSpeed : state.prePopupSpeed;
+    let newGameSpeed = state.gameSpeed;
+    let newPrePopupSpeed = state.prePopupSpeed;
+    if (popups.length > 0) {
+      if (state.gameSpeed > 0) {
+        newPrePopupSpeed = state.gameSpeed;
+        newGameSpeed = 0;
+      }
+    } else if (newGameSpeed === 0 && state.eventPopups.length > 0 && newPrePopupSpeed > 0) {
+      // Just dismissed the last popup — restore speed
+      newGameSpeed = newPrePopupSpeed;
+    }
 
     return {
       ...meters, grid: gridAfterDisaster, terrainMap: newTM,
@@ -601,12 +624,13 @@ export const useGameStore = create<GameState>((set) => ({
       constructionMap: newCMap, warnings,
       disasterWarning, disasterActive,
       disasterLevels, destroyedTiles,
+      damageReport, minigameStats,
       resilienceDecay, minigamePlayed,
       completedObjectives, seenAdvisories,
       repeatableAdvisories,
       eventsOrganized, eventTimers: newEventTimers, activeBuffs,
-      eventPopups: popups, prePopupSpeed: preSpeed,
-      gameSpeed: shouldPause ? 0 : preSpeed,
+      eventPopups: popups, prePopupSpeed: newPrePopupSpeed,
+      gameSpeed: newGameSpeed,
       gameResult: gameOver || (won ? 'win' : null),
       hasWon: state.hasWon || (won ? true : false),
       minigameScore: destroyedTiles.length > 0 ? 0 : state.minigameScore,
@@ -622,7 +646,7 @@ export const useGameStore = create<GameState>((set) => ({
     };
   }),
 
-  setGameSpeed: (s) => set({ gameSpeed: s }),
+  setGameSpeed: (s) => set(s > 0 ? { gameSpeed: s, prePopupSpeed: s } : { gameSpeed: s }),
   dismissWarning: (type) => set((s) => ({ warnings: s.warnings.filter(w => w.type !== type) })),
   clearMeterDeltas: () => set({ meterDeltas: {} }),
   clearJustCompleted: () => set({ justCompleted: [] }),
@@ -651,7 +675,7 @@ export const useGameStore = create<GameState>((set) => ({
     set((state) => {
       const lvl = state.devDisasterLevel;
       return {
-        disasterWarning: { type, message: `⚠️ Dev: Level ${lvl} ${type}`, daysLeft: 2, isDev: true },
+        disasterWarning: { type, message: `⚠️ Dev: Level ${lvl} ${type}`, daysLeft: 2, isDev: true, devLevel: lvl },
         disasterActive: null,
       };
     }),
@@ -759,18 +783,31 @@ export const useGameStore = create<GameState>((set) => ({
   startMinigame: () => set((state) => {
     if (!state.disasterWarning || state.disasterMinigame) return state;
     const type = state.disasterWarning.type;
-    // Pick 2 from disaster type + 3 random from all pools
+    // Pick 2 from disaster type + 2 random from all pools
     const typeQs = QUESTIONS.filter(q => q.type === type);
     const otherQs = QUESTIONS.filter(q => q.type !== type);
     const shuffled = [...typeQs].sort(() => Math.random() - 0.5);
     const shuffledOther = [...otherQs].sort(() => Math.random() - 0.5);
-    const selected = [...shuffled.slice(0, 2), ...shuffledOther.slice(0, 3)]
+    const selected = [...shuffled.slice(0, 2), ...shuffledOther.slice(0, 2)]
       .sort(() => Math.random() - 0.5)
       .map(q => ({ id: q.id, question: q.question, answers: q.answers, correctIndex: q.correctIndex, explanation: q.explanation }));
     return {
-      disasterMinigame: { type, questions: selected, currentIndex: 0, score: 0, answered: false, chosenIndex: -1 },
+      disasterMinigame: { type, phase: 'intro', questions: selected, currentIndex: 0, score: 0, answered: false, chosenIndex: -1 },
+  minigameStats: null,
+  damageReport: null,
       gameSpeed: 0, minigamePlayed: true,
     };
+  }),
+
+  nextMinigamePhase: () => set((state) => {
+    if (!state.disasterMinigame) return state;
+    const mg = { ...state.disasterMinigame };
+    if (mg.phase === 'intro') {
+      mg.phase = 'quiz';
+    } else if (mg.phase === 'quiz') {
+      mg.phase = 'results';
+    }
+    return { disasterMinigame: mg as MinigameState };
   }),
 
   answerMinigame: (answerIndex: number) => set((state) => {
@@ -787,7 +824,8 @@ export const useGameStore = create<GameState>((set) => ({
   closeMinigame: () => set((state) => {
     if (!state.disasterMinigame) return state;
     const score = state.disasterMinigame.score;
-    return { disasterMinigame: null, minigameScore: score, gameSpeed: 1 };
+    const pct = 1 - score * 0.175;
+    return { disasterMinigame: null, minigameScore: score, minigameStats: { score, pct }, gameSpeed: 1 };
   }),
 
   resetGame: () => set({
@@ -800,6 +838,8 @@ export const useGameStore = create<GameState>((set) => ({
     disasterWarning: null, disasterActive: null,
   disasterLevels: { tsunami: 0, earthquake: 0, drought: 0, smog: 0 },
   disasterMinigame: null, minigameScore: 0, minigamePlayed: false,
+  minigameStats: null,
+  damageReport: null,
     resilienceDecay: 0,
     meterOffsets: { pollution: 0, happiness: 0, renewablePct: 0, resilience: 0 },
     meterDeltas: {}, justCompleted: [], destroyedTiles: [],

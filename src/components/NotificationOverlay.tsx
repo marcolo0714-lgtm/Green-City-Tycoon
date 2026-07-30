@@ -18,6 +18,8 @@ export default function NotificationOverlay() {
   const disasterMinigame = useGameStore((s) => s.disasterMinigame);
   const minigamePlayed = useGameStore((s) => s.minigamePlayed);
   const startMinigame = useGameStore((s) => s.startMinigame);
+  const minigameStats = useGameStore((s) => s.minigameStats);
+  const damageReport = useGameStore((s) => s.damageReport);
   const seenAdvisories = useGameStore((s) => s.seenAdvisories);
   const repeatableAdvisories = useGameStore((s) => s.repeatableAdvisories);
   const activeRef = useRef(new Set<string>()); // currently visible keys
@@ -112,8 +114,66 @@ export default function NotificationOverlay() {
       {disasterWarning && !disasterMinigame && !minigamePlayed && (
         <div className="minigame-prepare-container">
           <button className="minigame-launch standalone" onClick={startMinigame}>
-            ⚠️ Prepare for {disasterWarning.type} (5 Qs)
+            ⚠️ Prepare for {disasterWarning.type} (4 Qs)
           </button>
+        </div>
+      )}
+
+      {/* Preparedness stats — shown during warning phase after quiz */}
+      {disasterWarning && minigamePlayed && minigameStats && (
+        <div className="minigame-prepare-container">
+          <div className="minigame-stats-box">
+            <div className="mstats-title">📋 Preparedness Results</div>
+            <div className="mstats-row">
+              <span className="mstats-label">Correct</span>
+              <span className="mstats-value">{minigameStats.score} / 4</span>
+            </div>
+            <div className="mstats-row">
+              <span className="mstats-label">Damage Reduction</span>
+              <span className="mstats-value mstats-highlight">{Math.round((1 - minigameStats.pct) * 100)}%</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Damage report — shown during active disaster recovery */}
+      {disasterActive && damageReport && (
+        <div className="minigame-prepare-container">
+          <div className="minigame-stats-box">
+            <div className="mstats-title">🏚️ Disaster Impact</div>
+            <div className="mstats-row">
+              <span className="mstats-label">Buildings Lost</span>
+              <span className="mstats-value">{damageReport.destroyed}</span>
+            </div>
+            <div className="mstats-row">
+              <span className="mstats-label">Money Lost</span>
+              <span className="mstats-value">${damageReport.money}</span>
+            </div>
+            {damageReport.population > 0 && (
+              <div className="mstats-row">
+                <span className="mstats-label">Population Lost</span>
+                <span className="mstats-value">{damageReport.population}</span>
+              </div>
+            )}
+            {damageReport.happiness > 0 && (
+              <div className="mstats-row">
+                <span className="mstats-label">Happiness Drop</span>
+                <span className="mstats-value">-{damageReport.happiness}%</span>
+              </div>
+            )}
+            {damageReport.resilience > 0 && (
+              <div className="mstats-row">
+                <span className="mstats-label">Resilience Drop</span>
+                <span className="mstats-value">-{damageReport.resilience}%</span>
+              </div>
+            )}
+            {damageReport.pollution > 0 && (
+              <div className="mstats-row">
+                <span className="mstats-label">Pollution Added</span>
+                <span className="mstats-value">+{damageReport.pollution}%</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -145,7 +205,34 @@ export default function NotificationOverlay() {
         <div className="game-overlay">
           <div className="game-overlay-card lose">
             <h2>💀 City Collapsed</h2>
-            <p>The problems became too severe to handle.</p>
+            {(() => {
+              const fatal = warnings.find(w => w.countdown <= 0);
+              if (fatal?.type === 'money') return (
+                <>
+                  <p>Your treasury ran dry and the city went bankrupt.</p>
+                  <p className="game-overlay-hint">💡 Build more Houses and Shops early to generate steady income. Organize events to multiply your earnings.</p>
+                </>
+              );
+              if (fatal?.type === 'population') return (
+                <>
+                  <p>Citizens abandoned the city — too few people remained to sustain it.</p>
+                  <p className="game-overlay-hint">💡 Build Houses and economic buildings to provide housing. Keep happiness above 30% for population growth.</p>
+                </>
+              );
+              if (fatal?.type === 'pollution') return (
+                <>
+                  <p>Choking pollution made the city uninhabitable.</p>
+                  <p className="game-overlay-hint">💡 Build Parks, Green Roofs, and Solar Panels. Organize events to slash pollution multipliers. Keep Air Quality above 20%.</p>
+                </>
+              );
+              if (fatal?.type === 'happiness') return (
+                <>
+                  <p>Citizens rioted — happiness plummeted beyond recovery.</p>
+                  <p className="game-overlay-hint">💡 Add Parks and Green Roofs for happiness. Reduce pollution and avoid overcrowding. Events multiply happiness from buildings.</p>
+                </>
+              );
+              return <p>The problems became too severe to handle.</p>;
+            })()}
             <p className="game-overlay-sub">Lasted {tickCount} days</p>
             <button className="game-overlay-btn" onClick={resetGame}>Try Again</button>
           </div>

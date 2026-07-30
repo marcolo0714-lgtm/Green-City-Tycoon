@@ -4,6 +4,7 @@ import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore } from '../store/gameStore';
 import BuildingModel3D from './BuildingModel3D';
+import DisasterEffects3D from './DisasterEffects3D';
 import type { Building } from '../types';
 
 const TILE_SIZE = 1.6;
@@ -81,11 +82,11 @@ const DestroyedOverlay = memo(function DestroyedOverlay({ col, row }: { col: num
 
 /* ---- terrain pair: connected obstacle spanning 2 tiles + road ---- */
 const TerrainPair = memo(function TerrainPair({
-  c1, r1, c2, r2, type, clearing,
+  c1, r1, c2, r2, type, clearing, droughtActive,
   onClearTile,
 }: {
   c1: number; r1: number; c2: number; r2: number;
-  type: string; clearing: number;
+  type: string; clearing: number; droughtActive: boolean;
   onClearTile: (e: ThreeEvent<MouseEvent>, ri: number, ci: number) => void;
 }) {
   const [x1, , z1] = tileToWorld(c1, r1);
@@ -120,8 +121,8 @@ const TerrainPair = memo(function TerrainPair({
       )}
       {type === 'lake' && (
         <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[1.8, 24]} />
-          <meshStandardMaterial color="#3b82f6" transparent opacity={0.85} side={THREE.DoubleSide} />
+          <circleGeometry args={[droughtActive ? 0.8 : 1.8, 24]} />
+          <meshStandardMaterial color="#3b82f6" transparent opacity={droughtActive ? 0.6 : 0.85} side={THREE.DoubleSide} />
         </mesh>
       )}
       {type === 'forest' && (
@@ -215,13 +216,14 @@ function WalkingPerson({ sx, sz, ex, ez, speed }: {
 
 /* ---- building on tile ---- */
 const BuildingOnTile = memo(function BuildingOnTile({
-  building, col, row, onClick, selectedBuilding, constructionRemaining, justCompleted,
+  building, col, row, onClick, selectedBuilding, constructionRemaining, justCompleted, destroyed,
 }: {
   building: Building; col: number; row: number;
   onClick: (e: ThreeEvent<MouseEvent>) => void;
   selectedBuilding: Building | null;
   constructionRemaining: number;
   justCompleted: boolean;
+  destroyed: boolean;
 }) {
   const [hover, setHover] = useState(false);
   const [x, , z] = tileToWorld(col, row);
@@ -230,7 +232,44 @@ const BuildingOnTile = memo(function BuildingOnTile({
   const buildingH = building.height * 1.2;
   const cutY = constructionRemaining > 0 ? buildingH * (1 - constructionRemaining / 2) : buildingH;
   const bldRef = useRef<THREE.Group>(null);
+  const wobbleGroupRef = useRef<THREE.Group>(null);
   const downPos = useRef({ x: 0, y: 0 });
+  const tumbleProgress = useRef(0);
+  const tumbleTriggered = useRef(false);
+
+  // Wobble during earthquake + tumble when destroyed
+  useFrame((_, delta) => {
+    const state = useGameStore.getState();
+    const isQuake = state.disasterActive?.type === 'earthquake';
+    const spd = state.gameSpeed;
+
+    if (!wobbleGroupRef.current) return;
+
+    if (isQuake && spd > 0) {
+      const t = performance.now() * 0.001;
+      wobbleGroupRef.current.rotation.x = Math.sin(t * 6 + col) * 0.05;
+      wobbleGroupRef.current.rotation.z = Math.cos(t * 7 + row) * 0.05;
+    } else {
+      wobbleGroupRef.current.rotation.x += (0 - wobbleGroupRef.current.rotation.x) * 0.15;
+      wobbleGroupRef.current.rotation.z += (0 - wobbleGroupRef.current.rotation.z) * 0.15;
+    }
+
+    // Tumble when destroyed
+    if (destroyed && spd > 0) {
+      if (!tumbleTriggered.current) {
+        tumbleTriggered.current = true;
+        tumbleProgress.current = 0;
+      }
+      if (tumbleProgress.current < 1) {
+        tumbleProgress.current = Math.min(1, tumbleProgress.current + delta * 0.5);
+      }
+      const p = tumbleProgress.current;
+      // Ease out
+      const ep = 1 - Math.pow(1 - p, 3);
+      wobbleGroupRef.current.rotation.z += ep * 1.57; // 90 degrees
+      wobbleGroupRef.current.position.y = -ep * 0.4;
+    }
+  });
 
   const handlePointerDown = useCallback((e: ThreeEvent<PointerEvent>) => {
     downPos.current = { x: e.clientX, y: e.clientY };
@@ -273,7 +312,8 @@ const BuildingOnTile = memo(function BuildingOnTile({
       onPointerDown={handlePointerDown}
       onPointerOver={(e) => { e.stopPropagation(); setHover(true); }}
       onPointerOut={() => setHover(false)}>
-      <group ref={bldRef}>
+      <group ref={wobbleGroupRef}>
+        <group ref={bldRef}>
         <BuildingModel3D building={building} />
       </group>
       {constructionRemaining > 0 && (
@@ -290,6 +330,7 @@ const BuildingOnTile = memo(function BuildingOnTile({
           </Html>
         </group>
       )}
+      </group>{/* end wobbleGroupRef */}
       {justCompleted && (
         <Html position={[0, buildingH + 0.5, 0]} center style={{ pointerEvents: 'none' }}>
           <div className="build-popup">
@@ -361,6 +402,7 @@ function GridContent() {
   const terrainClearing = useGameStore((s) => s.terrainClearing);
   const clearTerrain = useGameStore((s) => s.clearTerrain);
   const destroyedTiles = useGameStore((s) => s.destroyedTiles);
+  const droughtActive = useGameStore((s) => s.disasterActive?.type === 'drought');
   const justCompleted = useGameStore((s) => s.justCompleted);
   const clearJustCompleted = useGameStore((s) => s.clearJustCompleted);
   const gameSpeed = useGameStore((s) => s.gameSpeed);
@@ -513,6 +555,7 @@ function GridContent() {
           return (
             <TerrainPair key={`tp-${p.r1},${p.c1}`}
               c1={p.c1} r1={p.r1} c2={p.c2} r2={p.r2} type={p.type} clearing={clearing}
+              droughtActive={droughtActive}
               onClearTile={handleClearTerrain} />
           );
         });
@@ -537,7 +580,8 @@ function GridContent() {
         return <BuildingOnTile key={`b-${ri}-${ci}`} building={building} col={ci} row={ri}
           onClick={(e) => handleRemove(e, ri, ci)} selectedBuilding={selectedBuilding}
           constructionRemaining={constructionMap[`${ri},${ci}`] ?? 0}
-          justCompleted={justCompleted.includes(`${ri},${ci}`)} />;
+          justCompleted={justCompleted.includes(`${ri},${ci}`)}
+          destroyed={destroyedTiles.includes(`${ri},${ci}`)} />;
       })}
     </>
   );
@@ -554,6 +598,7 @@ export default function GameScene3D() {
         style={{ background: 'radial-gradient(ellipse at center, #0e7490 0%, #155e75 30%, #1e3a5f 60%, #0f172a 100%)', position: 'absolute', inset: 0 }}>
         <Suspense fallback={null}>
           <GridContent />
+          <DisasterEffects3D />
         </Suspense>
         <OrbitControls enableDamping dampingFactor={0.1} target={[gridCenter, 0, gridCenter]}
           minDistance={12} maxDistance={40} maxPolarAngle={Math.PI / 2.3} enablePan />

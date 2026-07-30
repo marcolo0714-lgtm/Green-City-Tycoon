@@ -38,7 +38,7 @@ export type TerrainType = 'mountain' | 'lake' | 'forest';
 export interface TerrainTile { type: TerrainType; clearing: number; }
 
 export type DisasterType = 'tsunami' | 'earthquake' | 'drought' | 'smog';
-export interface DisasterWarning { type: DisasterType; message: string; daysLeft: number; isDev?: boolean; }
+export interface DisasterWarning { type: DisasterType; message: string; daysLeft: number; isDev?: boolean; devLevel?: number; }
 
 export interface Question {
   id: string;
@@ -51,6 +51,7 @@ export interface Question {
 
 export interface MinigameState {
   type: DisasterType;
+  phase: 'intro' | 'quiz' | 'results';
   questions: { id: string; question: string; answers: string[]; correctIndex: number; explanation: string }[];
   currentIndex: number;
   score: number;
@@ -136,6 +137,8 @@ export interface GameState extends GameMeters {
   disasterMinigame: MinigameState | null;
   minigameScore: number;
   minigamePlayed: boolean;
+  minigameStats: { score: number; pct: number } | null;
+  damageReport: { destroyed: number; money: number; population: number; happiness: number; resilience: number; pollution: number } | null;
   resilienceDecay: number;
   meterOffsets: { pollution: number; happiness: number; renewablePct: number; resilience: number };
   meterDeltas: MeterDeltas; justCompleted: string[];
@@ -177,4 +180,5 @@ export interface GameState extends GameMeters {
   startMinigame: () => void;
   answerMinigame: (index: number) => void;
   closeMinigame: () => void;
+  nextMinigamePhase: () => void;
 }

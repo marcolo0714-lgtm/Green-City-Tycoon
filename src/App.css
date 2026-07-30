@@ -336,6 +336,10 @@ body {
   margin-bottom: 10px;
   border-bottom: 1px solid #1e293b;
   padding-bottom: 0;
+  position: sticky;
+  top: 0;
+  background: #111827;
+  z-index: 5;
 }
 
 .menu-tab {
@@ -1415,6 +1419,104 @@ body {
   line-height: 1.35;
 }
 
+.bubble-intro-text {
+  font-size: 0.82rem;
+  color: #e8e0c8;
+  line-height: 1.45;
+  margin: 0 0 6px;
+}
+
+.bubble-intro-sub {
+  font-size: 0.7rem;
+  color: #b8a878;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Results stats */
+.minigame-results-stats {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.results-stat {
+  flex: 1;
+  background: #1a3a1a;
+  border: 1px solid #2a5a2a;
+  border-radius: 8px;
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.results-stat.highlight {
+  border-color: #fbbf24;
+  background: #3a2a0a;
+}
+
+.results-stat-icon {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 2px;
+}
+
+.results-stat-label {
+  font-size: 0.55rem;
+  color: #9ab89a;
+  display: block;
+}
+
+.results-stat-value {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #4ade80;
+}
+
+.results-stat.highlight .results-stat-value {
+  color: #fbbf24;
+  font-size: 0.8rem;
+}
+
+/* Minigame stats box on main screen */
+.minigame-stats-box {
+  background: #111827ee;
+  backdrop-filter: blur(4px);
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 180px;
+}
+
+.mstats-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.mstats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.mstats-label {
+  font-size: 0.6rem;
+  color: #64748b;
+}
+
+.mstats-value {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.mstats-highlight {
+  color: #4ade80;
+}
+
 /* Progress */
 .minigame-progress {
   font-size: 0.7rem;
@@ -1683,6 +1785,17 @@ body {
 
 .game-overlay-card p { color: #94a3b8; font-size: 0.85rem; margin-bottom: 12px; }
 .game-overlay-sub { color: #64748b !important; font-size: 0.75rem !important; }
+
+.game-overlay-hint {
+  color: #fbbf24 !important;
+  font-size: 0.72rem !important;
+  line-height: 1.4;
+  margin-bottom: 10px;
+  background: #3a2a0a;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #fbbf2422;
+}
 
 .game-overlay-stats {
   display: flex;
