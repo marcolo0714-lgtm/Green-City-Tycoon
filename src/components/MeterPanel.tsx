@@ -92,10 +92,8 @@ export default function MeterPanel() {
   const instantComplete = useGameStore((s) => s.instantComplete);
   const devDisasterLevel = useGameStore((s) => s.devDisasterLevel);
   const setDevDisasterLevel = useGameStore((s) => s.setDevDisasterLevel);
-  const toggleShowAllGoals = useGameStore((s) => s.toggleShowAllGoals);
-  const devShowAllGoals = useGameStore((s) => s.devShowAllGoals);
-  const toggleShowAllEventViews = useGameStore((s) => s.toggleShowAllEventViews);
-  const devShowAllEventViews = useGameStore((s) => s.devShowAllEventViews);
+  const toggleDevReveal = useGameStore((s) => s.toggleDevReveal);
+  const devRevealAll = useGameStore((s) => s.devRevealAll);
   const activeBuffs = useGameStore((s) => s.activeBuffs);
   const eventsOrganized = useGameStore((s) => s.eventsOrganized);
   const grid = useGameStore((s) => s.grid);
@@ -152,12 +150,8 @@ export default function MeterPanel() {
         ⚡ Instant Complete
       </button>
 
-      <button className="dev-toggle-btn" onClick={toggleShowAllGoals} title="Dev: show all 20 goals including locked ones">
-        {devShowAllGoals ? '🙈' : '👁'} {devShowAllGoals ? 'Hide' : 'Show'} All Goals
-      </button>
-
-      <button className="dev-toggle-btn" onClick={toggleShowAllEventViews} title="Dev: add Preview button to all events in sidebar">
-        {devShowAllEventViews ? '🙈' : '🖼'} {devShowAllEventViews ? 'Hide' : 'Show'} Event Previews
+      <button className="dev-toggle-btn" onClick={toggleDevReveal} title="Dev: reveal all goals, event previews, and locked buildings">
+        {devRevealAll ? '🙈' : '👁'} {devRevealAll ? 'Hide' : 'Reveal'} All
       </button>
 
       {(disasterWarning || disasterActive) && (

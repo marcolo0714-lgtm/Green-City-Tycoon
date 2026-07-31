@@ -21,7 +21,10 @@ function App() {
   const setGameSpeed = useGameStore((s) => s.setGameSpeed);
   const tick = useGameStore((s) => s.tick);
   const resetGame = useGameStore((s) => s.resetGame);
-  const intervalRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const accRef = useRef(0);
+  const lastTimeRef = useRef(0);
+  const [dayProgress, setDayProgress] = useState(0);
   const [sceneKey, setSceneKey] = useState(0);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
@@ -43,23 +46,30 @@ function App() {
   }, [leftOpen, rightOpen, setGameSpeed]);
 
   useEffect(() => {
-    if (intervalRef.current !== null) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
 
     if (gameSpeed === 0 || gameResult) return;
 
-    const ms = TICK_INTERVAL_MS / gameSpeed;
-    intervalRef.current = window.setInterval(() => {
-      tick();
-    }, ms);
-
-    return () => {
-      if (intervalRef.current !== null) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+    lastTimeRef.current = 0;
+    const loop = (timestamp: number) => {
+      if (lastTimeRef.current === 0) lastTimeRef.current = timestamp;
+      const dt = timestamp - lastTimeRef.current;
+      lastTimeRef.current = timestamp;
+      accRef.current += dt * gameSpeed;
+      const interval = TICK_INTERVAL_MS;
+      setDayProgress((accRef.current % interval) / interval * 100);
+      if (accRef.current >= interval) {
+        accRef.current -= interval;
+        tick();
       }
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
   }, [gameSpeed, gameResult, tick]);
 
@@ -80,7 +90,7 @@ function App() {
 
   return (
     <div className={`app ${speedClass} ${leftOpen ? 'left-open' : ''} ${rightOpen ? 'right-open' : ''}`}>
-      <StatusBar onReset={handleReset} />
+      <StatusBar onReset={handleReset} dayProgress={dayProgress} />
       <div className="game-layout">
         {/* Sidebar backdrop for mobile */}
         {(leftOpen || rightOpen) && <div className="panel-backdrop" onClick={handleGridClick} />}

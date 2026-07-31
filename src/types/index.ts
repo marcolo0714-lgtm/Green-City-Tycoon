@@ -150,8 +150,7 @@ export interface GameState extends GameMeters {
   eventTimers: Record<string, number>;
   activeBuffs: ActiveBuffs;
   devDisasterLevel: number;
-  devShowAllGoals: boolean;
-  devShowAllEventViews: boolean;
+  devRevealAll: boolean;
   eventPopups: EventPopupData[];
   prePopupSpeed: GameSpeed;
   selectBuilding: (building: Building | null) => void;
@@ -170,8 +169,7 @@ export interface GameState extends GameMeters {
   startDisaster: (type: DisasterType) => void;
   instantComplete: () => void;
   setDevDisasterLevel: (level: number) => void;
-  toggleShowAllGoals: () => void;
-  toggleShowAllEventViews: () => void;
+  toggleDevReveal: () => void;
   dismissEventPopup: () => void;
   showEventPopup: (eventId: string) => void;
   adjustMeter: (meter: keyof GameMeters, amount: number) => void;

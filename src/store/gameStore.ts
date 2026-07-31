@@ -21,12 +21,6 @@ function countBuildings(grid: Grid, category: string): number {
   return count;
 }
 
-function totalBuildings(grid: Grid): number {
-  let count = 0;
-  for (const row of grid) for (const cell of row) if (cell) count++;
-  return count;
-}
-
 function sumBuildingStat(grid: Grid, stat: keyof Building): number {
   let sum = 0;
   for (const row of grid) for (const cell of row) if (cell) sum += (cell[stat] as number) || 0;
@@ -140,24 +134,33 @@ function gridWithoutConstruction(grid: Grid, constructionMap: Record<string, num
   );
 }
 
-function recalculateMeters(grid: Grid, currentMeters: GameMeters, buffs: ActiveBuffs = DEFAULT_BUFFS): GameMeters {
+function recalculateMeters(grid: Grid, currentMeters: GameMeters, buffs: ActiveBuffs = DEFAULT_BUFFS, fullGrid?: Grid): GameMeters {
   const ecoCount = countBuildings(grid, 'economic');
   const greenCount = countBuildings(grid, 'green');
-  const energyCount = countBuildings(grid, 'energy');
-  const total = totalBuildings(grid);
 
-  const rawPollution = sumBuildingStat(grid, 'pollution');
+  let rawPollution = sumBuildingStat(grid, 'pollution');
+  // Positive-pollution buildings apply immediately — include those still under construction
+  if (fullGrid) {
+    for (let ri = 0; ri < fullGrid.length; ri++) {
+      for (let ci = 0; ci < fullGrid[ri].length; ci++) {
+        const cell = fullGrid[ri][ci];
+        if (cell && cell.pollution > 0 && !grid[ri][ci]) {
+          rawPollution += cell.pollution;
+        }
+      }
+    }
+  }
   const scaledPollution = Math.round(rawPollution * buffs.pollutionMultiplier);
   const pollution = Math.max(0, Math.min(100, scaledPollution));
 
   const happinessBase = 40;
   const rawHappinessBoost = sumBuildingStat(grid, 'happinessBoost');
-  const happinessFromPollution = -pollution * 0.5;
+  const happinessFromPollution = pollution > 50 ? -(pollution - 50) * 1.0 : 0;
   const happiness = Math.max(0, Math.min(100, happinessBase + rawHappinessBoost + happinessFromPollution));
 
   const rawRenewable = sumBuildingStat(grid, 'renewableBoost');
   const scaledRenewable = Math.round(rawRenewable * buffs.renewableMultiplier);
-  const renewable = total > 0 ? Math.min(100, (energyCount / total) * 65 + scaledRenewable) : 0;
+  const renewable = Math.min(100, scaledRenewable);
 
   const rawResilience = sumBuildingStat(grid, 'resilienceBoost');
   const scaledResilience = Math.round(rawResilience * buffs.resilienceMultiplier);
@@ -183,8 +186,8 @@ function recalculateMeters(grid: Grid, currentMeters: GameMeters, buffs: ActiveB
   };
 }
 
-function recalculateGrid(grid: Grid, currentMeters: GameMeters, buffs: ActiveBuffs = DEFAULT_BUFFS): GameMeters {
-  return recalculateMeters(grid, currentMeters, buffs);
+function recalculateGrid(grid: Grid, currentMeters: GameMeters, buffs: ActiveBuffs = DEFAULT_BUFFS, fullGrid?: Grid): GameMeters {
+  return recalculateMeters(grid, currentMeters, buffs, fullGrid);
 }
 
 function checkWarnings(meters: GameMeters, existing: Warning[]): Warning[] {
@@ -361,6 +364,7 @@ const ADVISORY_TRIGGERS: Array<{ id: string; check: (state: GameState, prev: Gam
   { id: 'happiness_warn', check: (s) => s.warnings.some(w => w.type === 'happiness'), message: '⚠️ Citizens unhappy! Add Parks, Green Roofs, and reduce pollution.', canRepeat: true },
   { id: 'overcrowding', check: (s) => { const ec = countBuildings(s.grid, 'economic'); const gc = countBuildings(s.grid, 'green'); const hc = Math.floor((ec * 250 + gc * 50) * s.activeBuffs.popCapMultiplier); return hc > 0 && s.population > hc; }, message: '🏘️ Overcrowding! Build more Houses or Shops to provide adequate housing.', canRepeat: true },
   { id: 'disaster_prepare', check: (s) => s.disasterWarning !== null, message: 'A disaster is coming! Tap 📚 Prepare to answer 4 questions and reduce the damage.' },
+  { id: 'no_housing', check: (s) => { const ec = countBuildings(s.grid, 'economic'); const gc = countBuildings(s.grid, 'green'); const hc = Math.floor((ec * 250 + gc * 50) * s.activeBuffs.popCapMultiplier); return hc <= 0; }, message: '🏚️ No housing! Build Houses or Shops to provide homes for your citizens — without housing, population will rapidly decline.', canRepeat: true },
   { id: 'events_intro', check: (s) => s.money >= 500 && s.eventsOrganized.length === 0 && Object.keys(s.eventTimers).length === 0, message: '🎪 You can now organize events! Switch to the Events tab in the left sidebar to see available community events that permanently boost your meters.' },
 ];
 
@@ -405,8 +409,7 @@ export const useGameStore = create<GameState>((set) => ({
   eventsOrganized: [], eventTimers: {},
   activeBuffs: { ...DEFAULT_BUFFS },
   devDisasterLevel: 1,
-  devShowAllGoals: false,
-  devShowAllEventViews: false,
+  devRevealAll: false,
   eventPopups: [] as import('../types').EventPopupData[],
   prePopupSpeed: 1,
 
@@ -428,7 +431,7 @@ export const useGameStore = create<GameState>((set) => ({
       money: state.money - b.cost, population: state.population,
       pollution: state.pollution, happiness: state.happiness,
       renewablePct: state.renewablePct, resilience: state.resilience,
-    }, state.activeBuffs);
+    }, state.activeBuffs, newGrid);
     return { grid: newGrid, constructionMap: newCMap, ...m };
   }),
 
@@ -612,7 +615,7 @@ export const useGameStore = create<GameState>((set) => ({
       happiness: (extraMeters.happiness ?? state.happiness),
       renewablePct: (extraMeters.renewablePct ?? state.renewablePct),
       resilience: (extraMeters.resilience ?? state.resilience),
-    }, activeBuffs);
+    }, activeBuffs, gridAfterDisaster);
 
     // Resilience decay: -1 every 3 days
     let resilienceDecay = (state.resilienceDecay ?? 0) + 1;
@@ -739,9 +742,7 @@ export const useGameStore = create<GameState>((set) => ({
 
   setDevDisasterLevel: (level) => set({ devDisasterLevel: Math.max(1, Math.min(5, level)) }),
 
-  toggleShowAllGoals: () => set((s) => ({ devShowAllGoals: !s.devShowAllGoals })),
-
-  toggleShowAllEventViews: () => set((s) => ({ devShowAllEventViews: !s.devShowAllEventViews })),
+  toggleDevReveal: () => set((s) => ({ devRevealAll: !s.devRevealAll })),
 
   dismissEventPopup: () => set((s) => {
     const remaining = s.eventPopups.slice(1);
@@ -900,8 +901,7 @@ export const useGameStore = create<GameState>((set) => ({
   completedObjectives: [], seenAdvisories: [] as { id: string; message: string }[], repeatableAdvisories: [],
     eventsOrganized: [], eventTimers: {}, activeBuffs: { ...DEFAULT_BUFFS },
     devDisasterLevel: 1,
-    devShowAllGoals: false,
-    devShowAllEventViews: false,
+    devRevealAll: false,
     eventPopups: [] as import('../types').EventPopupData[],
     prePopupSpeed: 1,
   }),

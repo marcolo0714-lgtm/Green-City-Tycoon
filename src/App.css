@@ -54,6 +54,27 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.day-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.day-progress-track {
+  width: 48px;
+  height: 3px;
+  background: #1e293b;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.day-progress-fill {
+  height: 100%;
+  background: #4ade80;
+  border-radius: 2px;
+}
+
 .speed-badge {
   font-size: 0.75rem;
   color: #94a3b8;
@@ -307,6 +328,16 @@ body {
 .building-stat.happiness {
   color: #06b6d4;
   background: #06b6d41a;
+}
+
+.building-stat.resilience {
+  color: #8b5cf6;
+  background: #8b5cf61a;
+}
+
+.building-stat.renewable {
+  color: #f97316;
+  background: #f973161a;
 }
 
 .cancel-btn {

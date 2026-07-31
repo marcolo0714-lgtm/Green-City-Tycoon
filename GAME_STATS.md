@@ -15,44 +15,44 @@ Events are one-time purchases that provide **permanent compounding multipliers**
 
 | # | Event | Cost | Days | Pop Req | Conditions | Key Effects |
 |---|---|---|---|---|---|---|
-| 1 | Community Green Day 🌱 | $500 | 2 | 50 | — | Inc ×2.0, Hap ×1.5, Cap ×1.5, Grow ×2.0 |
-| 2 | Clean Energy Kickstart ⚡ | $3K | 3 | 200 | Ren≥10% | Inc ×2.0, **Poll ×0.5**, Res ×1.5, Cap ×1.5, Grow ×2.0 |
-| 3 | Coastal Shield Program 🛡️ | $8K | 3 | 500 | — | Inc ×2.0, Res ×2.0, Cap ×2.0, Grow ×2.5 |
-| 4 | Solar City Initiative ☀️ | $20K | 4 | 1,500 | Ren≥20% | Inc ×2.5, Ren ×2.0, Hap ×1.3, Cap ×2.0, Grow ×2.5 |
-| 5 | Metro Transit Network 🚇 | $50K | 4 | 5K | Hap≥40% | Inc ×2.5, **Poll ×0.5**, Cap ×2.5, Grow ×3.0 |
-| 6 | Urban Forest Program 🌳 | $120K | 5 | 15K | — | Inc ×2.5, Hap ×2.0, Cap ×3.0, Grow ×3.0 |
-| 7 | Water Renaissance 💧 | $300K | 5 | 50K | Ren≥40% | Inc ×3.0, Res ×2.5, Hap ×1.5, Cap ×3.0, Grow ×3.5 |
-| 8 | Climate Innovation District 🔬 | $800K | 6 | 150K | $≥$100K | Inc ×3.0, Ren ×2.5, **Poll ×0.4**, Cap ×3.5, Grow ×4.0 |
-| 9 | Smart Resilient City 🏙️ | $2M | 7 | 500K | Res≥30% | Inc ×3.5, Res ×3.0, Cap ×4.0, Grow ×4.0 |
-| 10 | World Sustainability Summit 🕊️ | $5M | 8 | 2M | Hap≥70% | Inc ×4.0, Hap ×2.0, Res ×2.0, Ren ×2.0, **Poll ×0.4**, Cap ×5.0, Grow ×5.0 |
+| 1 | Community Green Day 🌱 | $500 | 2 | 50 | — | Inc ×2.0, Cap ×1.5, Grow ×2.0 |
+| 2 | Clean Energy Kickstart ⚡ | $3K | 3 | 200 | **Ren≥10%** | Inc ×2.0, Poll ×0.5, Res ×1.5, Cap ×1.5 |
+| 3 | Coastal Shield Program 🛡️ | $8K | 3 | 500 | **Hap≥35%** | Inc ×2.0, Res ×1.5, Cap ×2.0, Grow ×2.5 |
+| 4 | Solar City Initiative ☀️ | $20K | 4 | 1,500 | **Ren≥20%** | Inc ×2.5, Ren ×2.0, Cap ×2.0, Grow ×2.5 |
+| 5 | Metro Transit Network 🚇 | $50K | 4 | 5K | **Hap≥40%** | Inc ×2.5, Poll ×0.5, Cap ×2.5, Grow ×3.0 |
+| 6 | Green Architecture Expo 🏛️ | $120K | 5 | 15K | **Res≥25%** | Inc ×2.5, Cap ×3.0, Grow ×3.0 |
+| 7 | Water Renaissance 💧 | $300K | 5 | 50K | **Ren≥40%** | Inc ×3.0, Res ×2.0, Cap ×3.0, Grow ×3.5 |
+| 8 | Climate Innovation District 🔬 | $800K | 6 | 150K | **Res≥35%** | Inc ×3.0, Ren ×2.5, Poll ×0.4, Cap ×3.5 |
+| 9 | Smart Resilient City 🏙️ | $2M | 7 | 500K | **Res≥30%** | Inc ×3.5, Cap ×4.0, Grow ×4.0 |
+| 10 | World Sustainability Summit 🕊️ | $5M | 8 | 2M | **Hap≥70%** | Inc ×4.0, Res ×2.0, Ren ×2.0, Poll ×0.4, Cap ×5.0, Grow ×5.0 |
 
 All multipliers stack **multiplicatively** (cumulative). Events have **no prerequisite event requirements**.
 
 ### Cumulative Multipliers After Events
 
-| After Event | Income | Pollution | Resilience | Happiness | Pop Cap | Pop Growth |
-|---|---|---|---|---|---|---|
-| 0 (start) | ×1 | ×1 | ×1 | ×1 | ×1 | ×1 |
-| 2 | ×4.0 | ×0.5 | ×1.5 | ×1.5 | ×2.25 | ×4.0 |
-| 4 | ×20 | ×0.5 | ×3.0 | ×1.95 | ×9.0 | ×25 |
-| 6 | ×125 | ×0.25 | ×3.0 | ×3.9 | ×67.5 | ×225 |
-| 8 | ×1,125 | ×0.1 | ×7.5 | ×5.85 | ×709 | ×3,150 |
-| 10 | ×15,750 | **×0.04** | ×45 | ×11.7 | ×14,175 | ×63,000 |
+| After Event | Income | Pollution | Resilience | Pop Cap | Pop Growth |
+|---|---|---|---|---|---|
+| 0 (start) | ×1 | ×1 | ×1 | ×1 | ×1 |
+| 2 | ×4.0 | ×0.5 | ×1.5 | ×2.25 | ×2.0 |
+| 4 | ×20 | ×0.5 | ×2.25 | ×9.0 | ×12.5 |
+| 6 | ×125 | ×0.25 | ×2.25 | ×67.5 | ×112.5 |
+| 8 | ×1,125 | ×0.1 | ×2.25 | ×709 | ×112.5 |
+| 10 | ×18,000 | **×0.04** | ×9.0 | ×17,719 | ×562.5 |
 
 ### Progression Example
 
-Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 Bike Lane:
+Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 EV Hub:
 
 | | 0 events | After 2 | After 4 | After 6 | After 8 | After 10 |
 |---|---|---|---|---|---|---|
-| **Income mult** | ×1 | ×4 | ×20 | ×125 | ×1,125 | ×15,750 |
-| **House income** (base $10) | $10 | $40 | $200 | $1,250 | $11,250 | $157,500 |
+| **Income mult** | ×1 | ×4 | ×20 | ×125 | ×1,125 | ×18,000 |
+| **House income** (base $10) | $10 | $40 | $200 | $1,250 | $11,250 | $180,000 |
 | **Pollution mult** | ×1 | ×0.5 | ×0.5 | ×0.25 | ×0.1 | ×0.04 |
-| **Shop pollution** (base 20) | 20 | 10 | 10 | 5 | 2 | 1 |
-| **Resilience mult** | ×1 | ×1.5 | ×3.0 | ×3.0 | ×7.5 | ×45 |
-| **Solar resilience** (base 1) | 1 | 1.5 | 3 | 3 | 7.5 | 45 |
-| **Pop Growth mult** | ×1 | ×4 | ×25 | ×225 | ×3,150 | ×63,000 |
-| **Pop growth/day** (at 80% hap) | 20 | 80 | 500 | 4,500 | 63,000 | 1.26M |
+| **Shop pollution** (base 15) | 15 | 7.5 | 7.5 | 3.75 | 1.5 | 0.6 |
+| **Resilience mult** | ×1 | ×1.5 | ×2.25 | ×2.25 | ×2.25 | ×9.0 |
+| **Green Roof resilience** (base 3) | 3 | 4.5 | 6.75 | 6.75 | 6.75 | 27 |
+| **Pop Growth mult** | ×1 | ×2 | ×12.5 | ×112.5 | ×112.5 | ×562.5 |
+| **Pop growth/day** (at 80% hap) | 20 | 40 | 250 | 2,250 | 2,250 | 11,250 |
 
 ### Unlocked Buildings by Event
 
@@ -61,7 +61,7 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 Bike L
 | #1 | Solar Panel |
 | #2 | Wind Turbine, Recycling Center, Composting Hub |
 | #3 | Seawall, Wave Absorber |
-| #4 | Solar Mega-Farm, Office Tower |
+| #4 | Geothermal Plant, Office Tower |
 | #5 | Transit Hub, Metro Hub |
 | #6 | Vertical Farm, Vertical Forest Tower |
 | #7 | Desalination, Wave Converter |
@@ -77,38 +77,38 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 Bike L
 
 | Building | Cost | Inc | Poll | Hap | Res | Ren | Category |
 |---|---|---|---|---|---|---|---|
-| House | $20 | +10 | **+10** | +1 | — | — | Economic |
-| Shop | $40 | +20 | **+20** | +1 | — | — | Economic |
-| Park | $15 | 0 | -3 | +3 | — | — | Green |
-| Green Roof | $25 | 0 | -2 | +2 | — | — | Green |
-| Water Purifier | $35 | 0 | -3 | +2 | — | — | Water |
-| EV Charging Hub | $25 | 0 | -2 | +2 | — | +1 | Transport |
+| House | $20 | +10 | +10 | +1 | — | — | Economic |
+| Shop | $45 | +22 | +15 | — | — | — | Economic |
+| Park | $18 | 0 | -4 | +3 | — | — | Green |
+| Green Roof | $40 | 0 | -2 | +1 | +3 | — | Green |
+| Water Purifier | $60 | 0 | -5 | — | +2 | — | Water |
+| EV Charging Hub | $50 | 0 | -1 | — | — | **+4** | Transport |
 
 ### Unlockable Buildings
 
 | Building | Cost | Inc | Poll | Hap | Res | Ren | Category | Unlock |
 |---|---|---|---|---|---|---|---|---|
-| Solar Panel | $80 | +10 | -3 | +1 | +1 | +4 | Energy | #1 |
-| Wind Turbine | $120 | +15 | -4 | +1 | +1 | +5 | Energy | #2 |
-| Recycling Center | $50 | +12 | -5 | +1 | — | — | Waste | #2 |
-| Composting Hub | $35 | +8 | -3 | +1 | — | — | Waste | #2 |
-| Seawall | $300 | 0 | 0 | +1 | +8 | — | Coastal | #3 |
-| Wave Absorber | $350 | 0 | 0 | +2 | +10 | — | Coastal | #3 |
-| Geothermal Plant | $200 | +20 | -5 | — | +2 | +6 | Energy | #4 |
-| Office Tower | $150 | +25 | **+6** | +2 | — | — | Economic | #4 |
-| Transit Hub | $120 | +15 | -3 | +2 | +1 | +2 | Transport | #5 |
-| Metro Hub | $250 | +30 | -4 | — | +2 | — | Transport | #5 |
-| Vertical Farm | $180 | +15 | -4 | +3 | — | — | Green | #6 |
-| Vertical Forest | $350 | +20 | -8 | +5 | +1 | — | Green | #6 |
-| Desalination | $300 | +18 | -5 | +2 | +3 | — | Water | #7 |
-| Wave Converter | $280 | +15 | -3 | — | +2 | +4 | Energy | #7 |
-| Research Lab | $400 | +18 | -4 | +1 | +3 | +3 | Science | #8 |
-| Observatory | $350 | 0 | -2 | +2 | +5 | — | Science | #8 |
-| Emergency Center | $500 | 0 | 0 | +1 | +10 | — | Science | #8 |
-| Factory | $400 | +35 | **+15** | -2 | — | — | Economic | #9 |
-| Smart Grid Center | $800 | +40 | -4 | — | +5 | +5 | Energy | #9 |
-| Global Trade Hub | $1,500 | +80 | 0 | +5 | +3 | — | Economic | #9 |
-| World Peace Garden | $2,000 | 0 | -10 | +10 | +10 | — | Green | #10 |
+| Solar Panel | $150 | +14 | -3 | — | — | +6 | Energy | #1 |
+| Wind Turbine | $220 | +20 | -4 | — | — | +7 | Energy | #2 |
+| Recycling Center | $100 | +16 | -6 | — | — | — | Waste | #2 |
+| Composting Hub | $70 | +8 | -3 | — | — | +2 | Waste | #2 |
+| Seawall | $500 | 0 | 0 | — | +12 | — | Coastal | #3 |
+| Wave Absorber | $700 | 0 | 0 | — | +18 | — | Coastal | #3 |
+| Geothermal Plant | $450 | +26 | -5 | — | +2 | +8 | Energy | #4 |
+| Office Tower | $350 | +35 | +5 | — | — | — | Economic | #4 |
+| Transit Hub | $300 | +18 | -3 | — | +1 | +3 | Transport | #5 |
+| Metro Hub | $600 | +38 | -4 | — | +3 | — | Transport | #5 |
+| Vertical Farm | $450 | +16 | -4 | +4 | — | — | Green | #6 |
+| Vertical Forest | $800 | +24 | -9 | +6 | — | — | Green | #6 |
+| Desalination | $650 | +20 | -4 | +2 | +4 | — | Water | #7 |
+| Wave Converter | $550 | +18 | -2 | — | +2 | +5 | Energy | #7 |
+| Research Lab | $1000 | +24 | -4 | — | +5 | +4 | Science | #8 |
+| Observatory | $800 | 0 | -2 | +3 | +7 | — | Science | #8 |
+| Emergency Center | $1400 | 0 | 0 | — | +16 | — | Science | #8 |
+| Factory | $1800 | +50 | +15 | -2 | — | — | Economic | #9 |
+| Smart Grid Center | $3500 | +55 | -5 | — | +7 | +7 | Energy | #9 |
+| Global Trade Hub | $6000 | +110 | 0 | +5 | +4 | — | Economic | #9 |
+| World Peace Garden | $12000 | 0 | -14 | +14 | — | — | Green | #10 |
 
 ---
 
@@ -128,11 +128,11 @@ housingCapacity = floor((ecoCount × 250 + greenCount × 50) × activeBuffs.popC
 popGrowthMultiplier = activeBuffs.popGrowthMultiplier
 popChange = housingCapacity > 0
   ? round(happiness ≥ 30 ? (happiness / 100) × 25 × popGrowthMultiplier : -5)
-  : -5
+  : -round(population × 0.2)
 overcrowdCap = floor(housingCapacity × 1.2)
 population = clamp(pop + popChange, 0, overcrowdCap)
 ```
-Without housing, declines by 5/day. Overcrowding (pop > housing capacity) causes happiness penalty (-2 per 10% over).
+Without housing, declines by **20% of current population per day**. Overcrowding (pop > housing capacity) causes happiness penalty (-2 per 10% over).
 
 ### Pollution
 ```
@@ -144,10 +144,10 @@ pollution = clamp(0, 100, scaledPollution)
 ### Happiness
 ```
 base = 40
-scaledBoost = round(sum(happinessBoost) × activeBuffs.happinessMultiplier)
 penalty = pollution × 0.5 + overcrowdingPenalty
-happiness = clamp(0, 100, base + scaledBoost - penalty)
+happiness = clamp(0, 100, base + sum(happinessBoost) - penalty)
 ```
+Happiness is **not** affected by event multipliers — it reflects building placement and pollution. Used as a punishment lever for overcrowding and bad decisions.
 
 ### Renewable Energy %
 ```
@@ -176,14 +176,15 @@ decay: -1 every 3 days
 
 ## Terrain
 
-| Type | Clear Cost | Clear Time | Restrictions |
-|---|---|---|---|
-| 🏔️ Mountain | $8,000 | 6 days | Cannot spawn on edge tiles (row/col 0 or 8) |
-| 🌊 Lake | $4,000 | 4 days | Cannot spawn on edge tiles (row/col 0 or 8) |
-| 🌲 Forest | $2,000 | 2 days | Can spawn anywhere |
+| Type | Clear Cost | Clear Time | Size | Restrictions |
+|---|---|---|---|---|
+| 🏔️ Mountain | **$400,000** | 6 days | **3×3 block** (9 tiles) | Cannot spawn on edge tiles (row/col 0 or 8) |
+| 🌊 Lake | **$30,000** | 4 days | **2×2 block** (4 tiles) | Cannot spawn on edge tiles (row/col 0 or 8) |
+| 🌲 Forest | $2,000 | 2 days | 2-tile pair | Can spawn anywhere |
 
-- Each terrain occupies **2 adjacent tiles** + the road between them (road turns red)
-- **2 mountains, 2 lakes, 4 forests** generated per game (8 pairs total = 16/81 tiles ≈ 20%)
+- **1 mountain, 2 lakes, 4 forests** generated per game (9 + 8 + 8 = 25 tiles ≈ 31% of grid)
+- Mountain and lake are each a **single merged 3D block** — clearing any tile in the block clears the entire block
+- Each terrain block has a unique `blockId` — adjacent blocks of the same type stay separate
 - Terrain tiles show **brown** ground; roads between same terrain pair are red (#7f1d1d)
 
 ---

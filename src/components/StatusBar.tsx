@@ -1,8 +1,8 @@
 import { useGameStore } from '../store/gameStore';
 
-interface Props { onReset: () => void }
+interface Props { onReset: () => void; dayProgress: number }
 
-export default function StatusBar({ onReset }: Props) {
+export default function StatusBar({ onReset, dayProgress }: Props) {
   const money = useGameStore((s) => s.money);
   const selectedBuilding = useGameStore((s) => s.selectedBuilding);
   const tickCount = useGameStore((s) => s.tickCount);
@@ -22,7 +22,12 @@ export default function StatusBar({ onReset }: Props) {
     <div className="status-bar">
       <h1 className="game-title">Green City Tycoon</h1>
       <div className="status-info">
-        <span className="tick-display">📅 Day {day}</span>
+        <div className="day-progress-wrap">
+          <span className="tick-display">📅 Day {day}</span>
+          <div className="day-progress-track">
+            <div className="day-progress-fill" style={{ width: `${dayProgress}%` }} />
+          </div>
+        </div>
         <span className="speed-badge" title={`Speed: ${speedLabel}`}>
           {gameSpeed === 0 ? '⏸' : gameSpeed === 2 ? '⏩' : '▶'} {speedLabel}
         </span>

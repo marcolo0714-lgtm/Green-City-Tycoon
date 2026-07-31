@@ -28,8 +28,7 @@ export default function BuildingMenu() {
   const organizeEvent = useGameStore((s) => s.organizeEvent);
   const completedObjectives = useGameStore((s) => s.completedObjectives);
   const showEventPopup = useGameStore((s) => s.showEventPopup);
-  const devShowAllGoals = useGameStore((s) => s.devShowAllGoals);
-  const devShowAllEventViews = useGameStore((s) => s.devShowAllEventViews);
+  const devRevealAll = useGameStore((s) => s.devRevealAll);
 
   const tutorialBlocksSelection = !tutorialComplete && !tutorialReplay && tutorialStep < 1;
 
@@ -78,7 +77,7 @@ export default function BuildingMenu() {
     money_10M: 'money_500k',
   };
 
-  const visibleGoals = devShowAllGoals
+  const visibleGoals = devRevealAll
     ? GOALS
     : GOALS.filter((g) => {
         const dep = GOAL_DEPS[g.id];
@@ -112,9 +111,11 @@ export default function BuildingMenu() {
         <>
           <h2>Buildings</h2>
           {(() => {
-            const available = BUILDINGS.filter(b =>
-              !b.unlockEvent || eventsOrganized.includes(b.unlockEvent)
-            );
+            const available = devRevealAll
+              ? BUILDINGS
+              : BUILDINGS.filter(b =>
+                !b.unlockEvent || eventsOrganized.includes(b.unlockEvent)
+              );
             const categories = [...new Set(available.map((b) => b.category))];
             return categories.map((category) => (
               <div key={category} className="building-category">
@@ -125,27 +126,30 @@ export default function BuildingMenu() {
                   {available.filter((b) => b.category === category).map((b) => {
                     const isSelected = selectedBuilding?.id === b.id;
                     const canAfford = money >= b.cost;
+                    const locked = devRevealAll && b.unlockEvent && !eventsOrganized.includes(b.unlockEvent);
                     const stats: { value: number; cls: string; title: string; prefix: string; emoji: string }[] = [];
                     if (b.income) stats.push({ value: b.income, cls: 'income', title: 'Income/day', prefix: '+', emoji: '💰' });
-                    if (b.pollution < 0) stats.push({ value: b.pollution, cls: 'clean', title: 'Pollution reduction', prefix: '', emoji: '🌿' });
-                    if (b.pollution > 0) stats.push({ value: b.pollution, cls: 'dirty', title: 'Pollution generated', prefix: '+', emoji: '🏭' });
+                    if (b.pollution < 0) stats.push({ value: -b.pollution, cls: 'clean', title: 'Air Quality', prefix: '+', emoji: '🌿' });
+                    if (b.pollution > 0) stats.push({ value: -b.pollution, cls: 'dirty', title: 'Air Quality', prefix: '', emoji: '🌿' });
                     if (b.happinessBoost !== 0) stats.push({ value: b.happinessBoost, cls: b.happinessBoost > 0 ? 'happiness' : 'dirty', title: 'Happiness effect', prefix: b.happinessBoost > 0 ? '+' : '', emoji: '😊' });
+                    if (b.resilienceBoost > 0) stats.push({ value: b.resilienceBoost, cls: 'resilience', title: 'Resilience boost', prefix: '+', emoji: '🛡️' });
+                    if (b.renewableBoost > 0) stats.push({ value: b.renewableBoost, cls: 'renewable', title: 'Renewable energy boost', prefix: '+', emoji: '⚡' });
                     return (
                       <button
                         key={b.id}
-                        className={`building-btn ${isSelected ? 'selected' : ''} ${!canAfford ? 'disabled' : ''}`}
+                        className={`building-btn ${isSelected ? 'selected' : ''} ${!canAfford || locked ? 'disabled' : ''} ${locked ? 'locked' : ''}`}
                         onClick={() => selectBuilding(isSelected ? null : b)}
                         style={{
                           borderColor: isSelected ? CATEGORY_COLORS[b.category] : 'transparent',
                           backgroundColor: isSelected ? CATEGORY_COLORS[b.category] + '22' : 'transparent',
                         }}
-                        disabled={!canAfford || tutorialBlocksSelection}
-                        title={!canAfford ? `Need $${b.cost - money} more` : `Place ${b.name} — $${b.cost}`}
+                        disabled={!canAfford || locked || tutorialBlocksSelection}
+                        title={locked ? `Requires event: ${b.unlockEvent}` : !canAfford ? `Need $${b.cost - money} more` : `Place ${b.name} — $${b.cost}`}
                       >
                         <span className="building-emoji">{b.emoji}</span>
                         <div className="building-info">
                           <div className="building-name-row">
-                            <span className="building-name">{b.name}</span>
+                            <span className="building-name">{locked ? '🔒 ' : ''}{b.name}</span>
                             <span className="building-cost">${b.cost}</span>
                           </div>
                           {stats.length > 0 && (
@@ -250,7 +254,7 @@ export default function BuildingMenu() {
                     <button className="event-view-btn" onClick={() => showEventPopup(ev.id)}>🔍 View</button>
                   </div>
                 )}
-                {!completed && devShowAllEventViews && (
+                {!completed && devRevealAll && (
                   <div className="event-done-row">
                     <button className="event-view-btn" onClick={() => showEventPopup(ev.id)}>🔍 Preview</button>
                   </div>
@@ -268,7 +272,7 @@ export default function BuildingMenu() {
             {visibleGoals.map((g) => {
               const done = completedObjectives.includes(g.id);
               const dep = GOAL_DEPS[g.id];
-              const locked = devShowAllGoals && dep && !completedObjectives.includes(dep);
+              const locked = devRevealAll && dep && !completedObjectives.includes(dep);
               return (
                 <div key={g.id} className={`goal-item ${done ? 'done' : ''} ${locked ? 'locked' : ''}`}>
                   <span className="goal-check">{done ? '✅' : locked ? '🔒' : '☐'}</span>

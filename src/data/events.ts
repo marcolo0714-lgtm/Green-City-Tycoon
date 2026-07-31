@@ -7,7 +7,7 @@ export const EVENTS: GameEvent[] = [
     description: 'A grassroots cleanup and tree-planting festival that rallies your citizens around sustainability. Unlocks basic solar panels.',
     popupDescription: 'Hundreds of citizens came together today, shovels in hand, to plant the first seeds of a greener future. Your city is now officially on the path to sustainability! 🌿',
     conditions: { population: 50 },
-    effects: { incomeMultiplier: 2.0, happinessMultiplier: 1.5, popCapMultiplier: 1.5, popGrowthMultiplier: 2.0 },
+    effects: { incomeMultiplier: 2.0, popCapMultiplier: 1.5, popGrowthMultiplier: 2.0 },
     unlocksBuildings: ['solar'],
   },
   {
@@ -16,7 +16,7 @@ export const EVENTS: GameEvent[] = [
     description: 'Launch wind farms, curbside recycling, and composting citywide to slash waste and fossil fuel dependence.',
     popupDescription: 'The turbines are spinning and the recycling trucks are rolling! Your city just took a giant leap toward energy independence — and the air already smells fresher. ⚡',
     conditions: { population: 200, renewablePct: 10 },
-    effects: { incomeMultiplier: 2.0, pollutionMultiplier: 0.5, resilienceMultiplier: 1.5, popCapMultiplier: 1.5, popGrowthMultiplier: 2.0 },
+    effects: { incomeMultiplier: 2.0, pollutionMultiplier: 0.5, resilienceMultiplier: 1.5, popCapMultiplier: 1.5 },
     unlocksBuildings: ['wind_turbine', 'recycling', 'composting'],
   },
   {
@@ -24,8 +24,8 @@ export const EVENTS: GameEvent[] = [
     cost: 8000, duration: 3,
     description: 'Fortify your coastline with seawalls and wave absorbers to protect against tsunamis before disaster strikes.',
     popupDescription: 'The coast is fortified! Massive seawalls now stand guard against the ocean\'s fury, and wave absorbers will blunt the impact of any future tsunami. Your citizens can sleep easier tonight. 🛡️',
-    conditions: { population: 500 },
-    effects: { incomeMultiplier: 2.0, resilienceMultiplier: 2.0, popCapMultiplier: 2.0, popGrowthMultiplier: 2.5 },
+    conditions: { population: 500, happiness: 35 },
+    effects: { incomeMultiplier: 2.0, resilienceMultiplier: 1.5, popCapMultiplier: 2.0, popGrowthMultiplier: 2.5 },
     unlocksBuildings: ['seawall', 'wave_absorber'],
   },
   {
@@ -34,7 +34,7 @@ export const EVENTS: GameEvent[] = [
     description: 'Build a large-scale geothermal power plant and modern office towers — tapping the Earth\'s own heat for clean baseload energy.',
     popupDescription: 'Deep beneath the city, geothermal wells now harness the Earth\'s primordial heat — powering homes and offices 24/7 with zero emissions. The future of energy is literally under our feet! 🌋',
     conditions: { population: 1500, renewablePct: 20 },
-    effects: { incomeMultiplier: 2.5, renewableMultiplier: 2.0, happinessMultiplier: 1.3, popCapMultiplier: 2.0, popGrowthMultiplier: 2.5 },
+    effects: { incomeMultiplier: 2.5, renewableMultiplier: 2.0, popCapMultiplier: 2.0, popGrowthMultiplier: 2.5 },
     unlocksBuildings: ['geothermal', 'office'],
   },
   {
@@ -51,8 +51,8 @@ export const EVENTS: GameEvent[] = [
     cost: 120000, duration: 5,
     description: 'Host an international expo showcasing living buildings — vertical farms and forest towers that grow food and clean the air.',
     popupDescription: 'Architects and designers from around the world gasped as your forest towers were unveiled — buildings that breathe, grow food, and house entire ecosystems. The age of living architecture has begun! 🏛️',
-    conditions: { population: 15000 },
-    effects: { incomeMultiplier: 2.5, happinessMultiplier: 2.0, popCapMultiplier: 3.0, popGrowthMultiplier: 3.0 },
+    conditions: { population: 15000, resilience: 25 },
+    effects: { incomeMultiplier: 2.5, popCapMultiplier: 3.0, popGrowthMultiplier: 3.0 },
     unlocksBuildings: ['vertical_farm', 'vertical_forest'],
   },
   {
@@ -61,7 +61,7 @@ export const EVENTS: GameEvent[] = [
     description: 'Deploy desalination plants, wave power converters, and advanced water reclamation to secure water independence.',
     popupDescription: 'The desalination plant hums to life, the wave converters dance with the tide, and crystal-clear water flows to every home. Your city has achieved water independence! 💧',
     conditions: { population: 50000, renewablePct: 40 },
-    effects: { incomeMultiplier: 3.0, resilienceMultiplier: 2.5, happinessMultiplier: 1.5, popCapMultiplier: 3.0, popGrowthMultiplier: 3.5 },
+    effects: { incomeMultiplier: 3.0, resilienceMultiplier: 2.0, popCapMultiplier: 3.0, popGrowthMultiplier: 3.5 },
     unlocksBuildings: ['desalination', 'wave_converter'],
   },
   {
@@ -69,8 +69,8 @@ export const EVENTS: GameEvent[] = [
     cost: 800000, duration: 6,
     description: 'Create a dedicated climate-tech research zone with labs, an observatory, emergency centers, and a cutting-edge research hub.',
     popupDescription: 'Beakers bubble, telescopes scan the skies, and brilliant minds collaborate in gleaming new labs. Your city is now a global center for climate science and innovation! 🔬',
-    conditions: { population: 150000, money: 100000 },
-    effects: { incomeMultiplier: 3.0, renewableMultiplier: 2.5, pollutionMultiplier: 0.4, popCapMultiplier: 3.5, popGrowthMultiplier: 4.0 },
+    conditions: { population: 150000, resilience: 35 },
+    effects: { incomeMultiplier: 3.0, renewableMultiplier: 2.0, pollutionMultiplier: 0.4, popCapMultiplier: 3.5 },
     unlocksBuildings: ['research_lab', 'observatory', 'emergency_center'],
   },
   {
@@ -79,7 +79,7 @@ export const EVENTS: GameEvent[] = [
     description: 'Roll out AI-powered smart grids, modern factories, and a global trade hub — turning your city into an economic powerhouse.',
     popupDescription: 'The smart grid is online — every watt of energy is optimized, every crisis anticipated, every building talking to every other. Your city doesn\'t just survive disasters — it shrugs them off. 🏙️',
     conditions: { population: 500000, resilience: 30 },
-    effects: { incomeMultiplier: 3.5, resilienceMultiplier: 3.0, popCapMultiplier: 4.0, popGrowthMultiplier: 4.0 },
+    effects: { incomeMultiplier: 3.5, popCapMultiplier: 4.0, popGrowthMultiplier: 4.0 },
     unlocksBuildings: ['factory', 'smart_grid', 'global_trade'],
   },
   {

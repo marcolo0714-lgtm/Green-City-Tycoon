@@ -240,7 +240,7 @@ function DroughtCracks({ active, warning }: { active: boolean; warning: boolean 
 
   useFrame((_, delta) => {
     const spd = gameSpeed === 0 ? 0 : delta;
-    const target = active ? 1 : warning ? 0.45 : 0;
+    const target = active ? 1 : warning ? 0.12 : 0;
     opacity.current += (target - opacity.current) * Math.min(1, spd * 2);
   });
 
@@ -259,7 +259,7 @@ function DroughtCracks({ active, warning }: { active: boolean; warning: boolean 
 }
 
 /* ====== DROUGHT LAND TINT ====== */
-function DroughtLand({ active, warning }: { active: boolean; warning: boolean }) {
+function DroughtLand({ active }: { active: boolean }) {
   const gridSize = useGameStore((s) => s.gridSize);
   const gameSpeed = useGameStore((s) => s.gameSpeed);
   const gridCenter = (gridSize - 1) * SPACING * 0.5;
@@ -268,7 +268,7 @@ function DroughtLand({ active, warning }: { active: boolean; warning: boolean })
 
   useFrame((_, delta) => {
     const spd = gameSpeed === 0 ? 0 : delta;
-    const target = active ? 1 : warning ? 0.45 : 0;
+    const target = active ? 1 : 0;
     opacity.current += (target - opacity.current) * Math.min(1, spd * 2);
   });
 
@@ -314,7 +314,7 @@ export default function DisasterEffects3D() {
       )}
       {(warnType === 'drought' || activeType === 'drought') && (
         <>
-          <DroughtLand active={activeType === 'drought'} warning={warnType === 'drought'} />
+          <DroughtLand active={activeType === 'drought'} />
           <DroughtCracks active={activeType === 'drought'} warning={warnType === 'drought'} />
         </>
       )}
