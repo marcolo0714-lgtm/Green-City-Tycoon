@@ -197,7 +197,6 @@ export default function BuildingMenu() {
             // Build effect rows
             const effRows: string[] = [];
             if (ev.effects.incomeMultiplier) effRows.push(`💰 Income ×${ev.effects.incomeMultiplier}`);
-            if (ev.effects.happinessMultiplier) effRows.push(`😊 Happiness ×${ev.effects.happinessMultiplier}`);
             if (ev.effects.resilienceMultiplier) effRows.push(`🛡️ Resilience ×${ev.effects.resilienceMultiplier}`);
             if (ev.effects.renewableMultiplier) effRows.push(`⚡ Renewable ×${ev.effects.renewableMultiplier}`);
             if (ev.effects.popCapMultiplier) effRows.push(`🏘️ Pop Cap ×${ev.effects.popCapMultiplier}`);

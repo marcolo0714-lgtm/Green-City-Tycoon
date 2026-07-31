@@ -35,7 +35,7 @@ export interface Warning {
 export type GameResult = 'win' | 'lose' | null;
 
 export type TerrainType = 'mountain' | 'lake' | 'forest';
-export interface TerrainTile { type: TerrainType; clearing: number; }
+export interface TerrainTile { type: TerrainType; clearing: number; blockId: number; }
 
 export type DisasterType = 'tsunami' | 'earthquake' | 'drought' | 'smog';
 export interface DisasterWarning { type: DisasterType; message: string; daysLeft: number; isDev?: boolean; devLevel?: number; }

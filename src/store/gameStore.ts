@@ -8,7 +8,7 @@ import { QUESTIONS } from '../data/questions';
 const GRID_SIZE = 9;
 const STARTING_MONEY = 300;
 const BUILD_TICKS = 2;
-const TERRAIN_CLEAR_COST: Record<TerrainType, number> = { mountain: 8000, lake: 4000, forest: 2000 };
+const TERRAIN_CLEAR_COST: Record<TerrainType, number> = { mountain: 400000, lake: 30000, forest: 2000 };
 const TERRAIN_CLEAR_TIME: Record<TerrainType, number> = { mountain: 6, lake: 4, forest: 2 };
 
 function createEmptyGrid(size: number): Grid {
@@ -39,32 +39,81 @@ function isOuter(row: number, col: number): boolean {
 
 function generateTerrain(): Record<string, TerrainTile> {
   const map: Record<string, TerrainTile> = {};
-  const used = new Set<string>();
-  const types: TerrainType[] = ['mountain', 'mountain', 'lake', 'lake', 'forest', 'forest', 'forest', 'forest'];
+  const occupied = new Set<string>(); // all tiles including border
+  let blockId = 0;
 
-  for (const type of shuffle(types)) {
+  // 1 mountain: 3×3 block (9 tiles)
+  {
     let placed = false;
-    const isEdge = type === 'mountain' || type === 'lake';
+    for (let attempt = 0; attempt < 200 && !placed; attempt++) {
+      const tr = 1 + Math.floor(Math.random() * (GRID_SIZE - 1 - 3));
+      const tc = 1 + Math.floor(Math.random() * (GRID_SIZE - 1 - 3));
+      let ok = true;
+      for (let dr = 0; dr < 3 && ok; dr++)
+        for (let dc = 0; dc < 3 && ok; dc++) {
+          const r = tr + dr, c = tc + dc;
+          if (r <= 0 || r >= GRID_SIZE - 1 || c <= 0 || c >= GRID_SIZE - 1) ok = false;
+          if (occupied.has(`${r},${c}`)) ok = false;
+        }
+      if (!ok) continue;
+      for (let dr = 0; dr < 3; dr++)
+        for (let dc = 0; dc < 3; dc++) {
+          const key = `${tr + dr},${tc + dc}`;
+          occupied.add(key);
+          map[key] = { type: 'mountain', clearing: 0, blockId };
+        }
+      placed = true;
+    }
+    if (placed) blockId++;
+  }
+
+  // 2 lakes: 2×2 blocks (each block = 4 tiles)
+  for (let l = 0; l < 2; l++) {
+    let placed = false;
+    for (let attempt = 0; attempt < 200 && !placed; attempt++) {
+      const tr = 1 + Math.floor(Math.random() * (GRID_SIZE - 1 - 2));
+      const tc = 1 + Math.floor(Math.random() * (GRID_SIZE - 1 - 2));
+      let ok = true;
+      for (let dr = 0; dr < 2 && ok; dr++)
+        for (let dc = 0; dc < 2 && ok; dc++) {
+          const r = tr + dr, c = tc + dc;
+          if (r <= 0 || r >= GRID_SIZE - 1 || c <= 0 || c >= GRID_SIZE - 1) ok = false;
+          if (occupied.has(`${r},${c}`)) ok = false;
+        }
+      if (!ok) continue;
+      for (let dr = 0; dr < 2; dr++)
+        for (let dc = 0; dc < 2; dc++) {
+          const key = `${tr + dr},${tc + dc}`;
+          occupied.add(key);
+          map[key] = { type: 'lake', clearing: 0, blockId };
+        }
+      placed = true;
+    }
+    if (placed) blockId++;
+  }
+
+  // 4 forests: pairs (each pair = 2 tiles)
+  for (let f = 0; f < 4; f++) {
+    let placed = false;
     for (let attempt = 0; attempt < 200 && !placed; attempt++) {
       const r = Math.floor(Math.random() * GRID_SIZE);
       const c = Math.floor(Math.random() * GRID_SIZE);
-      if (isEdge && (r <= 0 || r >= GRID_SIZE - 1 || c <= 0 || c >= GRID_SIZE - 1)) continue;
       const dirs = [[0, 1], [1, 0]];
       for (const [dr, dc] of shuffle(dirs)) {
         const r2 = r + dr, c2 = c + dc;
         if (r2 < 0 || r2 >= GRID_SIZE || c2 < 0 || c2 >= GRID_SIZE) continue;
-        if (isEdge && (r2 <= 0 || r2 >= GRID_SIZE - 1 || c2 <= 0 || c2 >= GRID_SIZE - 1)) continue;
         const k1 = `${r},${c}`, k2 = `${r2},${c2}`;
-        if (used.has(k1) || used.has(k2)) continue;
-        used.add(k1); used.add(k2);
-        map[k1] = { type, clearing: 0 };
-        map[k2] = { type, clearing: 0 };
+        if (occupied.has(k1) || occupied.has(k2)) continue;
+        occupied.add(k1); occupied.add(k2);
+        map[k1] = { type: 'forest', clearing: 0, blockId };
+        map[k2] = { type: 'forest', clearing: 0, blockId };
         placed = true;
         break;
       }
     }
-    if (!placed) break;
+    if (placed) blockId++;
   }
+
   return map;
 }
 
@@ -103,9 +152,8 @@ function recalculateMeters(grid: Grid, currentMeters: GameMeters, buffs: ActiveB
 
   const happinessBase = 40;
   const rawHappinessBoost = sumBuildingStat(grid, 'happinessBoost');
-  const scaledHappinessBoost = Math.round(rawHappinessBoost * buffs.happinessMultiplier);
   const happinessFromPollution = -pollution * 0.5;
-  const happiness = Math.max(0, Math.min(100, happinessBase + scaledHappinessBoost + happinessFromPollution));
+  const happiness = Math.max(0, Math.min(100, happinessBase + rawHappinessBoost + happinessFromPollution));
 
   const rawRenewable = sumBuildingStat(grid, 'renewableBoost');
   const scaledRenewable = Math.round(rawRenewable * buffs.renewableMultiplier);
@@ -118,7 +166,7 @@ function recalculateMeters(grid: Grid, currentMeters: GameMeters, buffs: ActiveB
   const housingCapacity = Math.floor((ecoCount * 250 + greenCount * 50) * buffs.popCapMultiplier);
   const popChange = housingCapacity > 0
     ? Math.round(currentMeters.happiness >= 30 ? (currentMeters.happiness / 100) * 25 * buffs.popGrowthMultiplier : -5)
-    : -5;
+    : -Math.round(currentMeters.population * 0.2);
   const rawPop = currentMeters.population + popChange;
   const overcrowdCap = housingCapacity > 0 ? Math.floor(housingCapacity * 1.2) : 0;
   const newPopulation = housingCapacity > 0
@@ -312,25 +360,37 @@ const ADVISORY_TRIGGERS: Array<{ id: string; check: (state: GameState, prev: Gam
   { id: 'pollution_warn', check: (s) => s.warnings.some(w => w.type === 'pollution'), message: '⚠️ Pollution critical! Build Parks, Green Roofs, or Renewable energy.', canRepeat: true },
   { id: 'happiness_warn', check: (s) => s.warnings.some(w => w.type === 'happiness'), message: '⚠️ Citizens unhappy! Add Parks, Green Roofs, and reduce pollution.', canRepeat: true },
   { id: 'overcrowding', check: (s) => { const ec = countBuildings(s.grid, 'economic'); const gc = countBuildings(s.grid, 'green'); const hc = Math.floor((ec * 250 + gc * 50) * s.activeBuffs.popCapMultiplier); return hc > 0 && s.population > hc; }, message: '🏘️ Overcrowding! Build more Houses or Shops to provide adequate housing.', canRepeat: true },
-  { id: 'disaster_prepare', check: (s) => s.disasterWarning !== null, message: 'A disaster is coming! Tap 📚 Prepare to answer 5 questions and reduce the damage.' },
+  { id: 'disaster_prepare', check: (s) => s.disasterWarning !== null, message: 'A disaster is coming! Tap 📚 Prepare to answer 4 questions and reduce the damage.' },
   { id: 'events_intro', check: (s) => s.money >= 500 && s.eventsOrganized.length === 0 && Object.keys(s.eventTimers).length === 0, message: '🎪 You can now organize events! Switch to the Events tab in the left sidebar to see available community events that permanently boost your meters.' },
 ];
 
-function findTerrainPartner(tm: Record<string, TerrainTile>, r: number, c: number): string | null {
+function findTerrainBlock(tm: Record<string, TerrainTile>, r: number, c: number): string[] {
   const type = tm[`${r},${c}`]?.type;
-  if (!type) return null;
-  for (const [dr, dc] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
-    const key = `${r + dr},${c + dc}`;
-    if (tm[key]?.type === type) return key;
+  if (!type) return [];
+  const keys: string[] = [];
+  const visited = new Set<string>();
+  const stack = [`${r},${c}`];
+  while (stack.length > 0) {
+    const key = stack.pop()!;
+    if (visited.has(key)) continue;
+    visited.add(key);
+    if (tm[key]?.type === type) {
+      keys.push(key);
+      const [rr, cc] = key.split(',').map(Number);
+      for (const [dr, dc] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+        const nk = `${rr + dr},${cc + dc}`;
+        if (!visited.has(nk)) stack.push(nk);
+      }
+    }
   }
-  return null;
+  return keys;
 }
 
 export const useGameStore = create<GameState>((set) => ({
   grid: createEmptyGrid(GRID_SIZE),
   gridSize: GRID_SIZE,
   money: STARTING_MONEY,
-      population: 100, pollution: 0, happiness: 50, renewablePct: 0, resilience: 0,
+      population: 100, pollution: 0, happiness: 40, renewablePct: 0, resilience: 0,
   selectedBuilding: null, tickCount: 0, gameSpeed: 1,
   warnings: [], gameResult: null, tutorialComplete: false, hasWon: false, tutorialReplay: false, tutorialStep: 0,
   constructionMap: {}, terrainMap: generateTerrain(), terrainClearing: {},
@@ -401,10 +461,10 @@ export const useGameStore = create<GameState>((set) => ({
       : [...state.seenAdvisories, { id: 'terrain_info', message: 'Terrain can be cleared to free up more buildable land.' }];
     const cost = TERRAIN_CLEAR_COST[t.type];
     if (state.money < cost) return { seenAdvisories };
-    // Find and clear the partner tile of this terrain pair
-    const partnerKey = findTerrainPartner(state.terrainMap, row, col);
-    const newClearing = { ...state.terrainClearing, [key]: TERRAIN_CLEAR_TIME[t.type] };
-    if (partnerKey) newClearing[partnerKey] = TERRAIN_CLEAR_TIME[t.type];
+    // Find and clear all tiles in this terrain block
+    const blockKeys = findTerrainBlock(state.terrainMap, row, col);
+    const newClearing = { ...state.terrainClearing };
+    for (const bk of blockKeys) newClearing[bk] = TERRAIN_CLEAR_TIME[t.type];
     return {
       money: state.money - cost,
       terrainClearing: newClearing,
@@ -470,7 +530,6 @@ export const useGameStore = create<GameState>((set) => ({
         if (ev) {
           // Stack multipliers
           if (ev.effects.incomeMultiplier) activeBuffs.incomeMultiplier *= ev.effects.incomeMultiplier;
-          if (ev.effects.happinessMultiplier) activeBuffs.happinessMultiplier *= ev.effects.happinessMultiplier;
           if (ev.effects.resilienceMultiplier) activeBuffs.resilienceMultiplier *= ev.effects.resilienceMultiplier;
           if (ev.effects.renewableMultiplier) activeBuffs.renewableMultiplier *= ev.effects.renewableMultiplier;
           if (ev.effects.pollutionMultiplier) activeBuffs.pollutionMultiplier *= ev.effects.pollutionMultiplier;
@@ -479,8 +538,6 @@ export const useGameStore = create<GameState>((set) => ({
           // Build effects list for popup
           const effs: string[] = [];
           if (ev.effects.incomeMultiplier) effs.push(`💰 Income ×${ev.effects.incomeMultiplier}`);
-          if (ev.effects.happinessMultiplier) effs.push(`😊 Happiness ×${ev.effects.happinessMultiplier}`);
-          if (ev.effects.resilienceMultiplier) effs.push(`🛡️ Resilience ×${ev.effects.resilienceMultiplier}`);
           if (ev.effects.renewableMultiplier) effs.push(`⚡ Renewable ×${ev.effects.renewableMultiplier}`);
           if (ev.effects.popCapMultiplier) effs.push(`🏘️ Pop Cap ×${ev.effects.popCapMultiplier}`);
           if (ev.effects.popGrowthMultiplier) effs.push(`📈 Pop Growth ×${ev.effects.popGrowthMultiplier}`);
@@ -699,8 +756,6 @@ export const useGameStore = create<GameState>((set) => ({
     if (!ev) return s;
     const effs: string[] = [];
     if (ev.effects.incomeMultiplier) effs.push(`💰 Income ×${ev.effects.incomeMultiplier}`);
-    if (ev.effects.happinessMultiplier) effs.push(`😊 Happiness ×${ev.effects.happinessMultiplier}`);
-    if (ev.effects.resilienceMultiplier) effs.push(`🛡️ Resilience ×${ev.effects.resilienceMultiplier}`);
     if (ev.effects.renewableMultiplier) effs.push(`⚡ Renewable ×${ev.effects.renewableMultiplier}`);
     if (ev.effects.popCapMultiplier) effs.push(`🏘️ Pop Cap ×${ev.effects.popCapMultiplier}`);
     if (ev.effects.popGrowthMultiplier) effs.push(`📈 Pop Growth ×${ev.effects.popGrowthMultiplier}`);
@@ -763,7 +818,6 @@ export const useGameStore = create<GameState>((set) => ({
       const ev = EVENTS.find(e => e.id === id);
       if (ev) {
         if (ev.effects.incomeMultiplier) activeBuffs.incomeMultiplier *= ev.effects.incomeMultiplier;
-        if (ev.effects.happinessMultiplier) activeBuffs.happinessMultiplier *= ev.effects.happinessMultiplier;
         if (ev.effects.resilienceMultiplier) activeBuffs.resilienceMultiplier *= ev.effects.resilienceMultiplier;
         if (ev.effects.renewableMultiplier) activeBuffs.renewableMultiplier *= ev.effects.renewableMultiplier;
         if (ev.effects.pollutionMultiplier) activeBuffs.pollutionMultiplier *= ev.effects.pollutionMultiplier;
@@ -830,7 +884,7 @@ export const useGameStore = create<GameState>((set) => ({
 
   resetGame: () => set({
     grid: createEmptyGrid(GRID_SIZE), money: STARTING_MONEY,
-  population: 100, pollution: 0, happiness: 50, renewablePct: 0, resilience: 0,
+  population: 100, pollution: 0, happiness: 40, renewablePct: 0, resilience: 0,
     selectedBuilding: null, tickCount: 0, gameSpeed: 0,
   warnings: [], gameResult: null, tutorialComplete: false, hasWon: false, tutorialReplay: false, tutorialStep: 0,
   constructionMap: {}, terrainMap: generateTerrain(), terrainClearing: {},

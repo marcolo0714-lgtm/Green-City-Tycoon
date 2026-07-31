@@ -134,7 +134,6 @@ export default function MeterPanel() {
           <h3 className="meter-section-title">Event Boosts</h3>
           <div className="boosts-list">
             {activeBuffs.incomeMultiplier > 1 && <div className="boost-row">💰 Income<span className="boost-mult">×{fmtMult(activeBuffs.incomeMultiplier)}</span></div>}
-            {activeBuffs.happinessMultiplier > 1 && <div className="boost-row">😊 Happiness<span className="boost-mult">×{fmtMult(activeBuffs.happinessMultiplier)}</span></div>}
             {activeBuffs.resilienceMultiplier > 1 && <div className="boost-row">🛡️ Resilience<span className="boost-mult">×{fmtMult(activeBuffs.resilienceMultiplier)}</span></div>}
             {activeBuffs.renewableMultiplier > 1 && <div className="boost-row">⚡ Renewable<span className="boost-mult">×{fmtMult(activeBuffs.renewableMultiplier)}</span></div>}
             {activeBuffs.popCapMultiplier > 1 && <div className="boost-row">🏘️ Pop Cap<span className="boost-mult">×{fmtMult(activeBuffs.popCapMultiplier)}</span></div>}

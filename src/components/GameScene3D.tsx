@@ -80,81 +80,75 @@ const DestroyedOverlay = memo(function DestroyedOverlay({ col, row }: { col: num
   );
 });
 
-/* ---- terrain pair: connected obstacle spanning 2 tiles + road ---- */
-const TerrainPair = memo(function TerrainPair({
-  c1, r1, c2, r2, type, clearing, droughtActive,
+/* ---- terrain block: single merged obstacle ====== */
+const TerrainBlock = memo(function TerrainBlock({
+  minCol, maxCol, minRow, maxRow, type, clearing, droughtActive,
   onClearTile,
 }: {
-  c1: number; r1: number; c2: number; r2: number;
+  minCol: number; maxCol: number; minRow: number; maxRow: number;
   type: string; clearing: number; droughtActive: boolean;
   onClearTile: (e: ThreeEvent<MouseEvent>, ri: number, ci: number) => void;
 }) {
-  const [x1, , z1] = tileToWorld(c1, r1);
-  const [x2, , z2] = tileToWorld(c2, r2);
-  const mx = (x1 + x2) / 2, mz = (z1 + z2) / 2;
+  const colSpan = maxCol - minCol + 1;
+  const rowSpan = maxRow - minRow + 1;
+  const [cx, , cz] = tileToWorld(minCol + (colSpan - 1) * 0.5, minRow + (rowSpan - 1) * 0.5);
   const [hover, setHover] = useState(false);
-  const clearCost = type === 'mountain' ? '$8,000' : type === 'lake' ? '$4,000' : '$2,000';
+  const clearCost = type === 'mountain' ? '$400K' : type === 'lake' ? '$30K' : '$2K';
   const clearTime = type === 'mountain' ? '6d' : type === 'lake' ? '4d' : '2d';
 
+  const forestTrees = useMemo(() => {
+    if (type !== 'forest') return null;
+    const area = colSpan * rowSpan;
+    const count = Math.max(16, area * 10);
+    const spreadX = colSpan * SPACING * 0.45;
+    const spreadZ = rowSpan * SPACING * 0.45;
+    return Array.from({ length: count }, (_, i) => {
+      const tx = (Math.random() - 0.5) * spreadX;
+      const tz = (Math.random() - 0.5) * spreadZ;
+      const tr = 0.12 + Math.random() * 0.18;
+      return { tx, tz, tr, i };
+    });
+  }, [type, colSpan, rowSpan]);
+
   return (
-    <group position={[mx, 0, mz]} onClick={(e) => onClearTile(e, r1, c1)}
+    <group position={[cx, 0, cz]} onClick={(e) => onClearTile(e, minRow, minCol)}
       onPointerOver={(e) => { e.stopPropagation(); setHover(true); }}
       onPointerOut={() => setHover(false)}>
       {type === 'mountain' && (
         <>
-          {/* Wide base */}
-          <mesh position={[0, 0.15, 0]}>
-            <coneGeometry args={[1.8, 0.6, 8]} />
+          <mesh position={[0, 0.3, 0]}>
+            <coneGeometry args={[colSpan * 1.4, colSpan * 0.4, 8]} />
             <meshStandardMaterial color="#6b5b4f" roughness={0.85} />
           </mesh>
-          {/* Tall peak */}
-          <mesh position={[0, 0.6, 0]}>
-            <coneGeometry args={[1.2, 2.2, 8]} />
+          <mesh position={[0, colSpan * 0.7, 0]}>
+            <coneGeometry args={[colSpan * 0.85, colSpan * 1.1, 8]} />
             <meshStandardMaterial color="#8b7355" roughness={0.8} />
           </mesh>
-          {/* Snow cap */}
-          <mesh position={[0, 1.5, 0]}>
-            <coneGeometry args={[0.4, 0.4, 6]} />
+          <mesh position={[0, colSpan * 0.7 + colSpan * 1.1 / 2 + 0.05, 0]}>
+            <coneGeometry args={[colSpan * 0.28, colSpan * 0.2, 6]} />
             <meshStandardMaterial color="#e2e8f0" roughness={0.6} />
           </mesh>
         </>
       )}
       {type === 'lake' && (
         <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[droughtActive ? 0.8 : 1.8, 24]} />
-          <meshStandardMaterial color="#3b82f6" transparent opacity={droughtActive ? 0.6 : 0.85} side={THREE.DoubleSide} />
+          <circleGeometry args={[droughtActive ? colSpan * 0.5 : Math.max(colSpan, rowSpan) * SPACING * 0.45, 32]} />
+          <meshStandardMaterial color="#3b82f6" side={THREE.DoubleSide} />
         </mesh>
       )}
-      {type === 'forest' && (
+      {type === 'forest' && forestTrees && (
         <>
-          {[
-            // Tile 1 trees (more dense)
-            [x1 - mx - 0.3, z1 - mz - 0.3, 0.3],
-            [x1 - mx + 0.3, z1 - mz - 0.2, 0.28],
-            [x1 - mx + 0.1, z1 - mz + 0.3, 0.25],
-            [x1 - mx - 0.2, z1 - mz + 0.1, 0.22],
-            [x1 - mx + 0.25, z1 - mz + 0.15, 0.18],
-            // Tile 2 trees (more dense)
-            [x2 - mx - 0.2, z2 - mz - 0.2, 0.28],
-            [x2 - mx + 0.35, z2 - mz - 0.1, 0.3],
-            [x2 - mx, z2 - mz + 0.3, 0.25],
-            [x2 - mx - 0.3, z2 - mz + 0.15, 0.2],
-            [x2 - mx + 0.2, z2 - mz + 0.2, 0.18],
-            // Road trees (sparser)
-            [mx - mx - 0.15, mz - mz - 0.1, 0.2],
-            [mx - mx + 0.2, mz - mz + 0.05, 0.18],
-          ].map(([tx, tz, tr], i) => (
-            <mesh key={i} position={[tx as number, 0.25, tz as number]}>
-              <sphereGeometry args={[tr as number, 6, 6]} />
+          {forestTrees.map(({ tx, tz, tr, i }) => (
+            <mesh key={i} position={[tx, 0.25, tz]}>
+              <sphereGeometry args={[tr, 6, 6]} />
               <meshStandardMaterial color={i % 3 === 0 ? '#166534' : i % 3 === 1 ? '#15803d' : '#14532d'} roughness={1} />
             </mesh>
           ))}
         </>
       )}
 
-      {/* Clearing indicator */}
       {clearing > 0 && (
-        <Html position={[0, type === 'mountain' ? 1.8 : 0.6, 0]} center style={{ pointerEvents: 'none' }}>
+        <Html position={[0, type === 'mountain' ? 5 : type === 'lake' ? 0.8 : 0.6, 0]} center style={{ pointerEvents: 'none' }}>
           <div style={{
             background: '#fbbf24dd', color: '#1a1a1a', padding: '2px 8px', borderRadius: 4,
             fontSize: '0.55rem', fontWeight: 700, whiteSpace: 'nowrap', fontFamily: 'system-ui, sans-serif',
@@ -162,15 +156,14 @@ const TerrainPair = memo(function TerrainPair({
         </Html>
       )}
 
-      {/* Hover tooltip */}
       {hover && clearing === 0 && (
-        <Html position={[0, type === 'mountain' ? 2 : 0.8, 0]} center style={{ pointerEvents: 'none' }}>
+        <Html position={[0, type === 'mountain' ? 5.5 : 1.2, 0]} center style={{ pointerEvents: 'none' }}>
           <div style={{
             background: '#111827ee', color: '#e2e8f0', padding: '4px 10px', borderRadius: 6,
             fontSize: '0.65rem', fontWeight: 600, whiteSpace: 'nowrap', fontFamily: 'system-ui, sans-serif',
             border: '1px solid #334155', textAlign: 'center',
           }}>
-            <div style={{ textTransform: 'capitalize' }}>{type}</div>
+            <div style={{ textTransform: 'capitalize' }}>{type} ({colSpan}×{rowSpan})</div>
             <div style={{ color: '#fbbf24', fontSize: '0.58rem' }}>Clear: {clearCost} ({clearTime})</div>
           </div>
         </Html>
@@ -526,35 +519,29 @@ function GridContent() {
         );
       })}
 
-      {/* Terrain pairs: group adjacent same-type tiles */}
+      {/* Terrain blocks: group by blockId */}
       {(() => {
-        const seen = new Set<string>();
-        const pairs: Array<{ c1: number; r1: number; c2: number; r2: number; type: string }> = [];
+        const blocksById = new Map<number, { keys: string[]; type: string; minCol: number; maxCol: number; minRow: number; maxRow: number }>();
         for (const [key, t] of Object.entries(terrainMap)) {
-          if (seen.has(key)) continue;
+          const id = t.blockId ?? 0;
+          if (!blocksById.has(id)) {
+            blocksById.set(id, { keys: [], type: t.type, minCol: gridSize, maxCol: -1, minRow: gridSize, maxRow: -1 });
+          }
+          const b = blocksById.get(id)!;
+          b.keys.push(key);
           const [r, c] = key.split(',').map(Number);
-          // Check right neighbor
-          const rightKey = `${r},${c + 1}`;
-          if (terrainMap[rightKey]?.type === t.type && !seen.has(rightKey)) {
-            seen.add(key); seen.add(rightKey);
-            pairs.push({ c1: c, r1: r, c2: c + 1, r2: r, type: t.type });
-            continue;
-          }
-          // Check bottom neighbor
-          const bottomKey = `${r + 1},${c}`;
-          if (terrainMap[bottomKey]?.type === t.type && !seen.has(bottomKey)) {
-            seen.add(key); seen.add(bottomKey);
-            pairs.push({ c1: c, r1: r, c2: c, r2: r + 1, type: t.type });
-            continue;
-          }
-          // Solo terrain (shouldn't happen, but handle)
-          seen.add(key);
+          if (c < b.minCol) b.minCol = c;
+          if (c > b.maxCol) b.maxCol = c;
+          if (r < b.minRow) b.minRow = r;
+          if (r > b.maxRow) b.maxRow = r;
         }
-        return pairs.map((p) => {
-          const clearing = terrainClearing[`${p.r1},${p.c1}`] || terrainClearing[`${p.r2},${p.c2}`] || 0;
+
+        return Array.from(blocksById.values()).map((b) => {
+          const clearing = b.keys.reduce((m, k) => Math.max(m, terrainClearing[k] || 0), 0);
           return (
-            <TerrainPair key={`tp-${p.r1},${p.c1}`}
-              c1={p.c1} r1={p.r1} c2={p.c2} r2={p.r2} type={p.type} clearing={clearing}
+            <TerrainBlock key={`tb-${b.keys[0]}`}
+              minCol={b.minCol} maxCol={b.maxCol} minRow={b.minRow} maxRow={b.maxRow}
+              type={b.type} clearing={clearing}
               droughtActive={droughtActive}
               onClearTile={handleClearTerrain} />
           );
