@@ -53,10 +53,9 @@ function App() {
 
     if (gameSpeed === 0 || gameResult) return;
 
-    lastTimeRef.current = 0;
+    lastTimeRef.current = performance.now();
     const loop = (timestamp: number) => {
-      if (lastTimeRef.current === 0) lastTimeRef.current = timestamp;
-      const dt = timestamp - lastTimeRef.current;
+      const dt = Math.max(0, Math.min(timestamp - lastTimeRef.current, 1000));
       lastTimeRef.current = timestamp;
       accRef.current += dt * gameSpeed;
       const interval = TICK_INTERVAL_MS;

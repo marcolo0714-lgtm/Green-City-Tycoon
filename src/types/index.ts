@@ -1,11 +1,12 @@
-export type Category = 'economic' | 'water' | 'energy' | 'coastal' | 'green' | 'science' | 'waste' | 'transport';
+export type Category = 'economic' | 'water' | 'energy' | 'coastal' | 'green' | 'science' | 'waste';
 
 export type Shape = 'house' | 'shop' | 'tower' | 'factory' | 'park' | 'green_roof' | 'stepped'
   | 'cylinder' | 'turbine' | 'solar' | 'block' | 'wall' | 'sloped' | 'observatory'
   | 'dome' | 'chimney' | 'flat'
   | 'solar_farm' | 'station' | 'forest_tower' | 'water_plant'
   | 'lab_complex' | 'grid_center' | 'trade_center' | 'peace_garden'
-  | 'charging_station' | 'geothermal' | 'lab';
+  | 'charging_station' | 'geothermal' | 'lab'
+  | 'rainwater' | 'aquifer' | 'wetland';
 
 export interface Building {
   id: string; name: string; shortName: string; emoji: string;
@@ -38,7 +39,7 @@ export type TerrainType = 'mountain' | 'lake' | 'forest';
 export interface TerrainTile { type: TerrainType; clearing: number; blockId: number; }
 
 export type DisasterType = 'tsunami' | 'earthquake' | 'drought' | 'smog';
-export interface DisasterWarning { type: DisasterType; message: string; daysLeft: number; isDev?: boolean; devLevel?: number; }
+export interface DisasterWarning { type: DisasterType; message: string; daysLeft: number; isDev?: boolean; devLevel?: number; maxDays: number; }
 
 export interface Question {
   id: string;

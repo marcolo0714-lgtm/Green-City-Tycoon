@@ -153,11 +153,6 @@ function recalculateMeters(grid: Grid, currentMeters: GameMeters, buffs: ActiveB
   const scaledPollution = Math.round(rawPollution * buffs.pollutionMultiplier);
   const pollution = Math.max(0, Math.min(100, scaledPollution));
 
-  const happinessBase = 40;
-  const rawHappinessBoost = sumBuildingStat(grid, 'happinessBoost');
-  const happinessFromPollution = pollution > 50 ? -(pollution - 50) * 1.0 : 0;
-  const happiness = Math.max(0, Math.min(100, happinessBase + rawHappinessBoost + happinessFromPollution));
-
   const rawRenewable = sumBuildingStat(grid, 'renewableBoost');
   const scaledRenewable = Math.round(rawRenewable * buffs.renewableMultiplier);
   const renewable = Math.min(100, scaledRenewable);
@@ -180,7 +175,7 @@ function recalculateMeters(grid: Grid, currentMeters: GameMeters, buffs: ActiveB
     money: currentMeters.money + Math.floor(sumBuildingStat(grid, 'income') * buffs.incomeMultiplier),
     population: Math.floor(newPopulation),
     pollution: Math.round(pollution),
-    happiness: Math.round(happiness),
+    happiness: currentMeters.happiness,
     renewablePct: Math.round(renewable),
     resilience: Math.round(resilience),
   };
@@ -288,9 +283,8 @@ function applyDisaster(
   } else if (type === 'earthquake') {
     const maxDestroy = EARTHQUAKE_MAX[L - 1];
     const emergencyCount = countSpecific(grid, b => b.id === 'emergency_center');
-    const parkCount = countSpecific(grid, b => b.shape === 'park');
     const resilienceBlock = Math.floor(m.resilience / 20);
-    const blocked = emergencyCount + Math.floor(parkCount / 2) + resilienceBlock;
+    const blocked = emergencyCount + resilienceBlock;
     const toDestroy = Math.max(1, maxDestroy - blocked - Math.floor(M / 2));
     let destCount = 0;
     const shuffled: Array<[number, number]> = [];
@@ -307,19 +301,21 @@ function applyDisaster(
     m.resilience = Math.max(0, m.resilience - Math.round(EQ_RES[L - 1] * pct));
     m.happiness = Math.max(0, m.happiness - Math.round(EQ_HAP[L - 1] * pct));
   } else if (type === 'drought') {
-    const parkDefense = Math.min(countSpecific(grid, b => b.shape === 'park'), 5);
-    const popLoss = Math.max(0, Math.round(DROUGHT_POP[L - 1] * pct) - parkDefense);
-    const happLoss = Math.max(0, Math.round(DROUGHT_HAP[L - 1] * pct) - parkDefense);
+    const waterCount = countBuildings(grid, 'water');
+    const waterDefense = Math.min(0.9, waterCount * 0.15);
+    const popLoss = Math.max(0, Math.round(DROUGHT_POP[L - 1] * pct * (1 - waterDefense)));
+    const happLoss = Math.max(0, Math.round(DROUGHT_HAP[L - 1] * pct) - Math.min(waterCount, 5));
     const moneyLoss = Math.max(0, Math.round(DROUGHT_MONEY[L - 1] * pct));
     m.population = Math.max(0, m.population - popLoss);
     m.happiness = Math.max(0, m.happiness - happLoss);
     m.money -= moneyLoss;
     if (L >= 5) m.happiness = Math.max(0, m.happiness - Math.round(15 * pct));
   } else if (type === 'smog') {
-    const cleanCount = countSpecific(grid, b => b.renewableBoost > 0 || b.pollution < -3);
-    const polExtra = Math.max(0, Math.round(SMOG_POL[L - 1] * pct) - cleanCount * 2);
-    const popLoss = Math.max(0, Math.round(SMOG_POP[L - 1] * pct) - Math.floor(cleanCount / 2));
-    const happLoss = Math.max(0, Math.round(SMOG_HAP[L - 1] * pct) - Math.floor(cleanCount / 2));
+    const greenCount = countBuildings(grid, 'green');
+    const greenDefense = Math.min(0.9, greenCount * 0.15);
+    const polExtra = Math.max(0, Math.round(SMOG_POL[L - 1] * pct * (1 - greenDefense)));
+    const popLoss = Math.max(0, Math.round(SMOG_POP[L - 1] * pct * (1 - greenDefense)));
+    const happLoss = Math.max(0, Math.round(SMOG_HAP[L - 1] * pct));
     m.pollution = Math.min(100, m.pollution + polExtra);
     m.population = Math.max(0, m.population - popLoss);
     m.happiness = Math.max(0, m.happiness - happLoss);
@@ -355,9 +351,9 @@ const OBJECTIVES: Objective[] = [
 const ADVISORY_TRIGGERS: Array<{ id: string; check: (state: GameState, prev: GameMeters) => boolean; message: string; canRepeat?: boolean }> = [
   { id: 'first_done', check: (s) => s.grid.some(r => r.some(c => c !== null)) && s.justCompleted.length > 0, message: 'Income is now active! Check your money meter.' },
   { id: 'tsunami_hint', check: (s) => s.disasterLevels.tsunami >= 1, message: '🌊 Tsunami hit! Build Seawalls (edge tiles) and Wave Absorbers to protect your coast.' },
-  { id: 'quake_hint', check: (s) => s.disasterLevels.earthquake >= 1, message: '🔥 Earthquake struck! Emergency Centers, Parks, and Resilience reduce building destruction.' },
-  { id: 'drought_hint', check: (s) => s.disasterLevels.drought >= 1, message: '☀️ Drought! Parks save population. Build more green spaces.' },
-  { id: 'smog_hint', check: (s) => s.disasterLevels.smog >= 1, message: '💨 Smog! Build clean energy (Solar, Wind) and Recycling Centers.' },
+  { id: 'quake_hint', check: (s) => s.disasterLevels.earthquake >= 1, message: '🔥 Earthquake struck! Emergency Centers and Resilience reduce building destruction.' },
+  { id: 'drought_hint', check: (s) => s.disasterLevels.drought >= 1, message: '☀️ Drought! Water buildings reduce population loss. Build Water Purifiers and more!' },
+  { id: 'smog_hint', check: (s) => s.disasterLevels.smog >= 1, message: '💨 Smog! Green buildings reduce pollution and population loss. Build Parks and green structures!' },
   { id: 'money_warn', check: (s) => s.warnings.some(w => w.type === 'money'), message: '⚠️ Money low! Build economic buildings (House, Shop) to earn income.', canRepeat: true },
   { id: 'pop_warn', check: (s) => s.warnings.some(w => w.type === 'population'), message: '⚠️ Population dropping! Provide more housing — build Houses or Shops.', canRepeat: true },
   { id: 'pollution_warn', check: (s) => s.warnings.some(w => w.type === 'pollution'), message: '⚠️ Pollution critical! Build Parks, Green Roofs, or Renewable energy.', canRepeat: true },
@@ -578,7 +574,7 @@ export const useGameStore = create<GameState>((set) => ({
     if (!disasterWarning && !disasterActive && state.tickCount > 0 && Math.random() < 0.3) {
       const types: DisasterType[] = ['tsunami', 'earthquake', 'drought', 'smog'];
       const type = types[Math.floor(Math.random() * types.length)];
-      disasterWarning = { type, message: `⚠️ Level ${currentDisasterLevel} ${DISASTER_MESSAGES[type]}`, daysLeft: maxWarning };
+      disasterWarning = { type, message: `⚠️ Level ${currentDisasterLevel} ${DISASTER_MESSAGES[type]}`, daysLeft: maxWarning, maxDays: maxWarning };
       minigamePlayed = false;
       minigameStats = null;
     } else if (disasterWarning) {
@@ -624,20 +620,38 @@ export const useGameStore = create<GameState>((set) => ({
       resilienceDecay = 0;
     }
 
-    // Overcrowding happiness penalty: -2 per 10% over housing capacity
+    // Overcrowding happiness penalty: -2 per 10% over housing capacity (capped at 15/day)
     const ecoC = countBuildings(active, 'economic');
     const greenC = countBuildings(active, 'green');
     const hCap = Math.floor((ecoC * 250 + greenC * 50) * activeBuffs.popCapMultiplier);
+    let overcrowdPenalty = 0;
     if (hCap > 0 && meters.population > hCap) {
       const overPct = Math.floor((meters.population - hCap) / hCap * 10);
-      meters.happiness = Math.max(0, meters.happiness - overPct * 2);
+      overcrowdPenalty = Math.min(15, overPct * 2);
     }
 
-    // Apply persistent manual meter offsets (for pollution, happiness, renewable, resilience)
+    // Pollution happiness penalty: when pollution > 50, excess × 1.0 (capped at 15/day)
+    let pollutionHapPenalty = 0;
+    if (meters.pollution > 50) {
+      pollutionHapPenalty = Math.min(15, (meters.pollution - 50) * 1.0);
+    }
+
+    // Persistent happiness: start from stored value, add building rates, subtract penalties
+    const happyDelta = sumBuildingStat(active, 'happinessBoost');
+    let newHappiness = state.happiness + happyDelta - overcrowdPenalty - pollutionHapPenalty;
+    // Apply disaster one-off deduction if present
+    if (extraMeters.happiness !== undefined && extraMeters.happiness < state.happiness) {
+      newHappiness -= (state.happiness - extraMeters.happiness);
+    }
+    newHappiness = Math.max(0, Math.min(100, newHappiness));
+    meters.happiness = Math.round(newHappiness);
+
+    // Apply persistent manual meter offsets (for pollution, renewable, resilience)
     meters.pollution = Math.max(0, Math.min(100, meters.pollution + (state.meterOffsets?.pollution || 0)));
-    meters.happiness = Math.max(0, Math.min(100, meters.happiness + (state.meterOffsets?.happiness || 0)));
     meters.renewablePct = Math.max(0, Math.min(100, meters.renewablePct + (state.meterOffsets?.renewablePct || 0)));
     meters.resilience = Math.max(0, Math.min(100, meters.resilience + (state.meterOffsets?.resilience || 0)));
+    // Happiness dev offset (separate from formula)
+    meters.happiness = Math.max(0, Math.min(100, meters.happiness + (state.meterOffsets?.happiness || 0)));
 
     const warnings = checkWarnings(meters, state.warnings);
     const gameOver = checkGameOver(warnings);
@@ -735,7 +749,7 @@ export const useGameStore = create<GameState>((set) => ({
     set((state) => {
       const lvl = state.devDisasterLevel;
       return {
-        disasterWarning: { type, message: `⚠️ Dev: Level ${lvl} ${type}`, daysLeft: 2, isDev: true, devLevel: lvl },
+        disasterWarning: { type, message: `⚠️ Dev: Level ${lvl} ${type}`, daysLeft: 2, isDev: true, devLevel: lvl, maxDays: 2 },
         disasterActive: null,
       };
     }),

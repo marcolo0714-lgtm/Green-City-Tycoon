@@ -70,9 +70,12 @@ export default function NotificationOverlay() {
           {disasterWarning && (
             <div className="warning-toast disaster">
               <span className="warning-icon">🌋</span>
-              <span>
+              <span className="warning-body">
                 <strong>{disasterWarning.message}</strong>
-                <span className="warning-countdown"> ({disasterWarning.daysLeft} days)</span>
+                <span className="warning-countdown"> ({disasterWarning.daysLeft}d)</span>
+                <div className="warning-bar-track">
+                  <div className="warning-bar-fill" style={{ width: `${Math.max(0, (disasterWarning.daysLeft / disasterWarning.maxDays) * 100)}%`, background: '#fbbf24' }} />
+                </div>
               </span>
             </div>
           )}
@@ -80,18 +83,24 @@ export default function NotificationOverlay() {
           {disasterActive && (
             <div className="warning-toast disaster active">
               <span className="warning-icon">💥</span>
-              <span>
+              <span className="warning-body">
                 <strong>{disasterActive.type} aftermath</strong>
                 <span className="warning-countdown"> ({disasterActive.daysLeft}d recovery)</span>
+                <div className="warning-bar-track">
+                  <div className="warning-bar-fill" style={{ width: `${Math.max(0, (disasterActive.daysLeft / 3) * 100)}%`, background: '#ef4444' }} />
+                </div>
               </span>
             </div>
           )}
           {warnings.map((w) => (
             <div key={w.type} className="warning-toast">
               <span className="warning-icon">⚠️</span>
-              <span>
+              <span className="warning-body">
                 <strong>{w.message}</strong>
-                <span className="warning-countdown"> ({w.countdown} day{w.countdown !== 1 ? 's' : ''} left)</span>
+                <span className="warning-countdown"> ({w.countdown}d)</span>
+                <div className="warning-bar-track">
+                  <div className="warning-bar-fill warning-bar-danger" style={{ width: `${Math.max(0, (w.countdown / 5) * 100)}%` }} />
+                </div>
               </span>
             </div>
           ))}

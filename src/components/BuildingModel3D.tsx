@@ -63,22 +63,27 @@ function Shop3D({ color, height }: BProps) {
 /* ====== TOWER ====== */
 function Tower3D({ color, height }: BProps) {
   const h = height * 1.5;
-  const w = 0.8; // half-width
+  const w = 0.8;
   const rows = 5, cols = 2;
   const windows: React.ReactNode[] = [];
+  const sides = [
+    { px: 0, pz: w + 0.01 },
+    { px: 0, pz: -w - 0.01 },
+    { px: w + 0.01, pz: 0 },
+    { px: -w - 0.01, pz: 0 },
+  ];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const x = -w + 0.2 + c * 0.5;
-      windows.push(
-        <Box key={`fw-${r}-${c}`} args={[0.2, 0.25, 0.02]} position={[x, 0.4 + r * (h / rows), w + 0.01]}>
-          <meshStandardMaterial color="#fef3c7" roughness={0.3} emissive="#fef3c7" emissiveIntensity={0.25} />
-        </Box>
-      );
-      windows.push(
-        <Box key={`rw-${r}-${c}`} args={[0.02, 0.25, 0.2]} position={[w + 0.01, 0.4 + r * (h / rows), -w + 0.2 + c * 0.5]}>
-          <meshStandardMaterial color="#fef3c7" roughness={0.3} emissive="#fef3c7" emissiveIntensity={0.25} />
-        </Box>
-      );
+      for (const s of sides) {
+        const offset = -w + 0.2 + c * 0.5;
+        windows.push(
+          <Box key={`tw-${r}-${c}-${s.pz}`} args={[s.px ? 0.02 : 0.2, 0.25, s.pz ? 0.02 : 0.2]} position={[
+            s.px || offset, 0.4 + r * (h / rows), s.pz || offset,
+          ]}>
+            <meshStandardMaterial color="#fef3c7" roughness={0.3} emissive="#fef3c7" emissiveIntensity={0.25} />
+          </Box>
+        );
+      }
     }
   }
   return (
@@ -117,14 +122,17 @@ function Factory3D({ color, height }: BProps) {
           <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.6).getStyle()} roughness={0.6} />
         </Box>
       ))}
-      {/* garage door */}
-      <Box args={[1.2, 0.7, 0.05]} position={[0, h * 0.3, 0.91]}>
-        <meshStandardMaterial color="#1f2937" roughness={0.8} />
-      </Box>
-      {/* door line split */}
-      <Box args={[0.02, 0.7, 0.06]} position={[0, h * 0.3, 0.91]}>
-        <meshStandardMaterial color="#4b5563" roughness={0.5} />
-      </Box>
+      {/* garage doors front + back */}
+      {[-0.9, 0.9].map(z => (
+        <group key={`gd-${z}`}>
+          <Box args={[1.2, 0.7, 0.05]} position={[0, h * 0.3, z]}>
+            <meshStandardMaterial color="#1f2937" roughness={0.8} />
+          </Box>
+          <Box args={[0.02, 0.7, 0.06]} position={[0, h * 0.3, z > 0 ? z + 0.01 : z - 0.01]}>
+            <meshStandardMaterial color="#4b5563" roughness={0.5} />
+          </Box>
+        </group>
+      ))}
       {/* chimneys */}
       <Cylinder args={[0.16, 0.2, 0.7, 8]} position={[-0.55, h + 0.4, -0.3]}>
         <meshStandardMaterial color="#78716c" roughness={0.8} />
@@ -207,39 +215,119 @@ function Stepped3D({ color, height }: BProps) {
       <Box args={[2, h1, 2]} position={[0, h1 / 2, 0]}>
         <meshStandardMaterial color={color} roughness={0.7} />
       </Box>
-      {/* Greenhouse glass panels on level 1 */}
+      {/* Greenhouse glass panels on level 1 — 4 sides */}
       {[-0.7, 0, 0.7].map((x, i) => (
-        <Box key={`g1-${i}`} args={[0.35, h1 * 0.6, 0.04]} position={[x, h1 * 0.5, 1.01]}>
+        <Box key={`g1f-${i}`} args={[0.35, h1 * 0.6, 0.04]} position={[x, h1 * 0.5, 1.01]}>
           <meshStandardMaterial color="#bae6fd" roughness={0.15} metalness={0.2} emissive="#7dd3fc" emissiveIntensity={0.1} />
         </Box>
       ))}
-      {/* Crops on level 1 */}
+      {[-0.7, 0, 0.7].map((x, i) => (
+        <Box key={`g1b-${i}`} args={[0.35, h1 * 0.6, 0.04]} position={[x, h1 * 0.5, -1.01]}>
+          <meshStandardMaterial color="#bae6fd" roughness={0.15} metalness={0.2} emissive="#7dd3fc" emissiveIntensity={0.1} />
+        </Box>
+      ))}
+      {[-0.7, 0, 0.7].map((z, i) => (
+        <Box key={`g1l-${i}`} args={[0.04, h1 * 0.6, 0.35]} position={[-1.01, h1 * 0.5, z]}>
+          <meshStandardMaterial color="#bae6fd" roughness={0.15} metalness={0.2} emissive="#7dd3fc" emissiveIntensity={0.1} />
+        </Box>
+      ))}
+      {[-0.7, 0, 0.7].map((z, i) => (
+        <Box key={`g1r-${i}`} args={[0.04, h1 * 0.6, 0.35]} position={[1.01, h1 * 0.5, z]}>
+          <meshStandardMaterial color="#bae6fd" roughness={0.15} metalness={0.2} emissive="#7dd3fc" emissiveIntensity={0.1} />
+        </Box>
+      ))}
+      {/* Crops on level 1 — 4 sides */}
       {[-0.6, -0.2, 0.2, 0.6].map((x, i) => (
-        <group key={`c1-${i}`}>
+        <group key={`c1f-${i}`}>
           <Box args={[0.12, h1 * 0.15, 0.12]} position={[x, h1 * 0.85, 0.55]}>
             <meshStandardMaterial color={i % 2 === 0 ? '#86efac' : '#4ade80'} roughness={1} />
           </Box>
-          <Cylinder args={[0.02, 0.02, 0.08, 4]} position={[x, h1 * 0.94, 0.55]}>
-            <meshStandardMaterial color={i % 2 === 0 ? '#22c55e' : '#16a34a'} roughness={0.8} />
-          </Cylinder>
         </group>
       ))}
-      {/* Irrigation pipe along level 1 edge */}
-      <Cylinder args={[0.03, 0.03, 2.0, 6]} position={[0, h1 * 0.7, 0.85]} rotation={[0, 0, 0]}>
+      {[-0.6, -0.2, 0.2, 0.6].map((x, i) => (
+        <group key={`c1b-${i}`}>
+          <Box args={[0.12, h1 * 0.15, 0.12]} position={[x, h1 * 0.85, -0.55]}>
+            <meshStandardMaterial color={i % 2 === 0 ? '#86efac' : '#4ade80'} roughness={1} />
+          </Box>
+        </group>
+      ))}
+      {[-0.6, -0.2, 0.2, 0.6].map((z, i) => (
+        <group key={`c1l-${i}`}>
+          <Box args={[0.12, h1 * 0.15, 0.12]} position={[-0.55, h1 * 0.85, z]}>
+            <meshStandardMaterial color={i % 2 === 0 ? '#86efac' : '#4ade80'} roughness={1} />
+          </Box>
+        </group>
+      ))}
+      {[-0.6, -0.2, 0.2, 0.6].map((z, i) => (
+        <group key={`c1r-${i}`}>
+          <Box args={[0.12, h1 * 0.15, 0.12]} position={[0.55, h1 * 0.85, z]}>
+            <meshStandardMaterial color={i % 2 === 0 ? '#86efac' : '#4ade80'} roughness={1} />
+          </Box>
+        </group>
+      ))}
+      {/* Irrigation pipes — 4 sides */}
+      <Cylinder args={[0.03, 0.03, 1.8, 6]} position={[0, h1 * 0.7, 0.75]}>
+        <meshStandardMaterial color="#64748b" roughness={0.3} metalness={0.5} />
+      </Cylinder>
+      <Cylinder args={[0.03, 0.03, 1.8, 6]} position={[0, h1 * 0.7, -0.75]}>
+        <meshStandardMaterial color="#64748b" roughness={0.3} metalness={0.5} />
+      </Cylinder>
+      <Cylinder args={[0.03, 0.03, 1.8, 6]} position={[-0.75, h1 * 0.7, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <meshStandardMaterial color="#64748b" roughness={0.3} metalness={0.5} />
+      </Cylinder>
+      <Cylinder args={[0.03, 0.03, 1.8, 6]} position={[0.75, h1 * 0.7, 0]} rotation={[0, 0, Math.PI / 2]}>
         <meshStandardMaterial color="#64748b" roughness={0.3} metalness={0.5} />
       </Cylinder>
       {/* Level 2 */}
       <Box args={[1.5, h2, 1.5]} position={[0, h1 + h2 / 2, 0]}>
         <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(1.1).getStyle()} roughness={0.7} />
       </Box>
+      {/* Level 2 glass panels — 4 sides */}
       {[-0.45, -0.15, 0.15, 0.45].map((x, i) => (
-        <Box key={`g2-${i}`} args={[0.25, h2 * 0.5, 0.03]} position={[x, h1 + h2 * 0.5, 0.76]}>
+        <Box key={`g2f-${i}`} args={[0.25, h2 * 0.5, 0.03]} position={[x, h1 + h2 * 0.5, 0.76]}>
           <meshStandardMaterial color="#bae6fd" roughness={0.15} metalness={0.2} emissive="#7dd3fc" emissiveIntensity={0.1} />
         </Box>
       ))}
+      {[-0.45, -0.15, 0.15, 0.45].map((x, i) => (
+        <Box key={`g2b-${i}`} args={[0.25, h2 * 0.5, 0.03]} position={[x, h1 + h2 * 0.5, -0.76]}>
+          <meshStandardMaterial color="#bae6fd" roughness={0.15} metalness={0.2} emissive="#7dd3fc" emissiveIntensity={0.1} />
+        </Box>
+      ))}
+      {[-0.45, -0.15, 0.15, 0.45].map((z, i) => (
+        <Box key={`g2l-${i}`} args={[0.03, h2 * 0.5, 0.25]} position={[-0.76, h1 + h2 * 0.5, z]}>
+          <meshStandardMaterial color="#bae6fd" roughness={0.15} metalness={0.2} emissive="#7dd3fc" emissiveIntensity={0.1} />
+        </Box>
+      ))}
+      {[-0.45, -0.15, 0.15, 0.45].map((z, i) => (
+        <Box key={`g2r-${i}`} args={[0.03, h2 * 0.5, 0.25]} position={[0.76, h1 + h2 * 0.5, z]}>
+          <meshStandardMaterial color="#bae6fd" roughness={0.15} metalness={0.2} emissive="#7dd3fc" emissiveIntensity={0.1} />
+        </Box>
+      ))}
+      {/* Level 2 crops — 4 sides */}
       {[-0.4, -0.1, 0.2, 0.5].map((x, i) => (
-        <group key={`c2-${i}`}>
+        <group key={`c2f-${i}`}>
           <Box args={[0.1, h2 * 0.15, 0.1]} position={[x, h1 + h2 * 0.85, 0.4]}>
+            <meshStandardMaterial color={i % 2 === 0 ? '#a3e635' : '#84cc16'} roughness={1} />
+          </Box>
+        </group>
+      ))}
+      {[-0.4, -0.1, 0.2, 0.5].map((x, i) => (
+        <group key={`c2b-${i}`}>
+          <Box args={[0.1, h2 * 0.15, 0.1]} position={[x, h1 + h2 * 0.85, -0.4]}>
+            <meshStandardMaterial color={i % 2 === 0 ? '#a3e635' : '#84cc16'} roughness={1} />
+          </Box>
+        </group>
+      ))}
+      {[-0.4, -0.1, 0.2, 0.5].map((z, i) => (
+        <group key={`c2l-${i}`}>
+          <Box args={[0.1, h2 * 0.15, 0.1]} position={[-0.4, h1 + h2 * 0.85, z]}>
+            <meshStandardMaterial color={i % 2 === 0 ? '#a3e635' : '#84cc16'} roughness={1} />
+          </Box>
+        </group>
+      ))}
+      {[-0.4, -0.1, 0.2, 0.5].map((z, i) => (
+        <group key={`c2r-${i}`}>
+          <Box args={[0.1, h2 * 0.15, 0.1]} position={[0.4, h1 + h2 * 0.85, z]}>
             <meshStandardMaterial color={i % 2 === 0 ? '#a3e635' : '#84cc16'} roughness={1} />
           </Box>
         </group>
@@ -248,14 +336,52 @@ function Stepped3D({ color, height }: BProps) {
       <Box args={[1, h3, 1]} position={[0, h1 + h2 + h3 / 2, 0]}>
         <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(1.2).getStyle()} roughness={0.7} />
       </Box>
+      {/* Level 3 glass — 4 sides */}
       {[-0.3, 0, 0.3].map((x, i) => (
-        <Box key={`g3-${i}`} args={[0.2, h3 * 0.5, 0.03]} position={[x, h1 + h2 + h3 * 0.5, 0.51]}>
+        <Box key={`g3f-${i}`} args={[0.2, h3 * 0.5, 0.03]} position={[x, h1 + h2 + h3 * 0.5, 0.51]}>
           <meshStandardMaterial color="#bae6fd" roughness={0.15} metalness={0.2} emissive="#7dd3fc" emissiveIntensity={0.1} />
         </Box>
       ))}
+      {[-0.3, 0, 0.3].map((x, i) => (
+        <Box key={`g3b-${i}`} args={[0.2, h3 * 0.5, 0.03]} position={[x, h1 + h2 + h3 * 0.5, -0.51]}>
+          <meshStandardMaterial color="#bae6fd" roughness={0.15} metalness={0.2} emissive="#7dd3fc" emissiveIntensity={0.1} />
+        </Box>
+      ))}
+      {[-0.3, 0, 0.3].map((z, i) => (
+        <Box key={`g3l-${i}`} args={[0.03, h3 * 0.5, 0.2]} position={[-0.51, h1 + h2 + h3 * 0.5, z]}>
+          <meshStandardMaterial color="#bae6fd" roughness={0.15} metalness={0.2} emissive="#7dd3fc" emissiveIntensity={0.1} />
+        </Box>
+      ))}
+      {[-0.3, 0, 0.3].map((z, i) => (
+        <Box key={`g3r-${i}`} args={[0.03, h3 * 0.5, 0.2]} position={[0.51, h1 + h2 + h3 * 0.5, z]}>
+          <meshStandardMaterial color="#bae6fd" roughness={0.15} metalness={0.2} emissive="#7dd3fc" emissiveIntensity={0.1} />
+        </Box>
+      ))}
+      {/* Level 3 crops — 4 sides */}
       {[-0.25, 0, 0.25].map((x, i) => (
-        <group key={`c3-${i}`}>
+        <group key={`c3f-${i}`}>
           <Sphere args={[0.08, 6, 4]} position={[x, h1 + h2 + h3 * 0.85, 0.25]}>
+            <meshStandardMaterial color={i === 0 ? '#fbbf24' : i === 1 ? '#ef4444' : '#22c55e'} roughness={0.7} />
+          </Sphere>
+        </group>
+      ))}
+      {[-0.25, 0, 0.25].map((x, i) => (
+        <group key={`c3b-${i}`}>
+          <Sphere args={[0.08, 6, 4]} position={[x, h1 + h2 + h3 * 0.85, -0.25]}>
+            <meshStandardMaterial color={i === 0 ? '#fbbf24' : i === 1 ? '#ef4444' : '#22c55e'} roughness={0.7} />
+          </Sphere>
+        </group>
+      ))}
+      {[-0.25, 0, 0.25].map((z, i) => (
+        <group key={`c3l-${i}`}>
+          <Sphere args={[0.08, 6, 4]} position={[-0.25, h1 + h2 + h3 * 0.85, z]}>
+            <meshStandardMaterial color={i === 0 ? '#fbbf24' : i === 1 ? '#ef4444' : '#22c55e'} roughness={0.7} />
+          </Sphere>
+        </group>
+      ))}
+      {[-0.25, 0, 0.25].map((z, i) => (
+        <group key={`c3r-${i}`}>
+          <Sphere args={[0.08, 6, 4]} position={[0.25, h1 + h2 + h3 * 0.85, z]}>
             <meshStandardMaterial color={i === 0 ? '#fbbf24' : i === 1 ? '#ef4444' : '#22c55e'} roughness={0.7} />
           </Sphere>
         </group>
@@ -354,38 +480,46 @@ function Block3D({ color, height, id }: BProps) {
   if (id === 'wave_converter') {
     return (
       <group>
-        {/* Base platform */}
-        <Box args={[1.6, 0.1, 1.6]} position={[0, 0.05, 0]}>
+        {/* Base platform — sits on the shoreline */}
+        <Box args={[1.8, 0.12, 1.8]} position={[0, 0.06, 0]}>
           <meshStandardMaterial color="#94a3b8" roughness={0.6} />
         </Box>
-        {/* Oscillating water column chamber */}
-        <Box args={[0.8, h * 0.7, 0.6]} position={[0, h * 0.35 + 0.1, 0]}>
+        {/* Main OWC concrete chamber — tall cylinder */}
+        <Cylinder args={[0.5, 0.55, h * 1.2, 16]} position={[0, h * 0.6 + 0.12, 0]}>
           <meshStandardMaterial color={color} roughness={0.55} />
-        </Box>
-        {/* Chamber opening at bottom */}
-        <Box args={[0.5, 0.1, 0.4]} position={[0, 0.12, 0]}>
-          <meshStandardMaterial color="#1e293b" roughness={0.7} />
-        </Box>
-        {/* Turbine housing on top */}
-        <Cylinder args={[0.2, 0.25, 0.3, 8]} position={[0, h * 0.7 + 0.25, 0]}>
-          <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(1.2).getStyle()} roughness={0.4} />
         </Cylinder>
-        {/* Turbine blades (visible through top) */}
-        <Box args={[0.35, 0.03, 0.08]} position={[0, h * 0.7 + 0.4, 0]}>
-          <meshStandardMaterial color="#e2e8f0" roughness={0.3} metalness={0.3} />
+        {/* Water inlet opening at the bottom front */}
+        <Box args={[0.7, 0.25, 0.35]} position={[0, 0.22, 0.6]}>
+          <meshStandardMaterial color="#0c4a6e" roughness={0.7} />
         </Box>
-        <Box args={[0.08, 0.03, 0.35]} position={[0, h * 0.7 + 0.4, 0]}>
-          <meshStandardMaterial color="#e2e8f0" roughness={0.3} metalness={0.3} />
+        {/* Chamber opening highlight */}
+        <Box args={[0.5, 0.08, 0.05]} position={[0, 0.22, 0.78]}>
+          <meshStandardMaterial color="#38bdf8" roughness={0.3} metalness={0.3} />
         </Box>
-        {/* Wave-like base details */}
-        {[-0.5, 0, 0.5].map((x, i) => (
-          <Box key={`wv-${i}`} args={[0.2, 0.06, 0.6]} position={[x, 0.06, 0.5]} rotation={[0, 0, i * 0.2 - 0.2]}>
-            <meshStandardMaterial color="#3b82f6" roughness={0.4} metalness={0.3} />
+        {/* Wave ripple lines in front of inlet */}
+        {[0.35, 0.5, 0.65].map((z, i) => (
+          <Box key={`wr-${i}`} args={[0.6, 0.03, 0.05]} position={[0, 0.1 + i * 0.04, z]}>
+            <meshStandardMaterial color="#7dd3fc" roughness={0.3} emissive="#38bdf8" emissiveIntensity={0.1} />
           </Box>
         ))}
-        {/* Outlet pipe */}
-        <Cylinder args={[0.06, 0.06, 0.5, 8]} position={[0, 0.3, 0.6]} rotation={[0.5, 0, 0]}>
-          <meshStandardMaterial color="#64748b" roughness={0.4} metalness={0.5} />
+        {/* Turbine generator housing on top */}
+        <Cylinder args={[0.3, 0.35, 0.35, 8]} position={[0, h * 1.2 + 0.3, 0]}>
+          <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(1.2).getStyle()} roughness={0.35} />
+        </Cylinder>
+        {/* Rotating turbine blades */}
+        <Box args={[0.4, 0.04, 0.08]} position={[0, h * 1.2 + 0.5, 0]}>
+          <meshStandardMaterial color="#e2e8f0" roughness={0.2} metalness={0.4} />
+        </Box>
+        <Box args={[0.08, 0.04, 0.4]} position={[0, h * 1.2 + 0.5, 0]}>
+          <meshStandardMaterial color="#e2e8f0" roughness={0.2} metalness={0.4} />
+        </Box>
+        {/* Power cable/conduit from top */}
+        <Cylinder args={[0.04, 0.04, 0.6, 6]} position={[0.2, h * 1.2 + 0.6, 0.2]} rotation={[0.3, 0.5, 0]}>
+          <meshStandardMaterial color="#64748b" roughness={0.3} metalness={0.5} />
+        </Cylinder>
+        {/* Structural support ring */}
+        <Cylinder args={[0.57, 0.57, 0.06, 16]} position={[0, h * 0.5, 0]}>
+          <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.75).getStyle()} roughness={0.4} metalness={0.2} />
         </Cylinder>
       </group>
     );
@@ -759,64 +893,74 @@ function Station3D({ color, height }: BProps) {
   const h = height * 1.6;
   return (
     <group>
-      {/* Main hall */}
-      <Box args={[2, h, 1.1]} position={[0, h / 2, 0]}>
-        <meshStandardMaterial color={color} roughness={0.7} />
+      {/* Underground tunnel structure */}
+      <Box args={[2.2, h * 0.3, 1.5]} position={[0, h * 0.15, 0]}>
+        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.7).getStyle()} roughness={0.7} />
       </Box>
-      {/* Curved barrel roof */}
-      <Cylinder args={[0.65, 0.65, 1.9, 8, 1, true, 0, Math.PI]} position={[0, h, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(1.2).getStyle()} roughness={0.35} metalness={0.2} />
+      {/* Main station building */}
+      <Box args={[1.8, h * 0.6, 1.2]} position={[0, h * 0.55, 0]}>
+        <meshStandardMaterial color={color} roughness={0.65} />
+      </Box>
+      {/* Curved roof */}
+      <Cylinder args={[0.65, 0.65, 1.8, 8, 1, false, 0, Math.PI]} position={[0, h * 0.88, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(1.2).getStyle()} roughness={0.3} metalness={0.2} />
       </Cylinder>
-      {/* Clock tower */}
-      <Box args={[0.25, h * 0.45, 0.25]} position={[0.7, h + h * 0.23, 0.25]}>
-        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(1.1).getStyle()} roughness={0.6} />
+      {/* Roof end caps */}
+      <Box args={[0.06, 0.65, 1.3]} position={[0.87, h * 0.88, 0]}>
+        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.8).getStyle()} roughness={0.5} />
       </Box>
-      <Box args={[0.35, 0.3, 0.35]} position={[0.7, h + h * 0.4, 0.25]}>
-        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.85).getStyle()} roughness={0.5} />
+      <Box args={[0.06, 0.65, 1.3]} position={[-0.87, h * 0.88, 0]}>
+        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.8).getStyle()} roughness={0.5} />
       </Box>
-      <Cylinder args={[0.22, 0.22, 0.04, 8]} position={[0.7, h + h * 0.38, 0.45]}>
-        <meshStandardMaterial color="#fef3c7" roughness={0.2} emissive="#fef3c7" emissiveIntensity={0.4} />
+      {/* Clock on building front — rotated to face outward */}
+      <Cylinder args={[0.18, 0.18, 0.04, 16]} position={[0.55, h * 0.72, 0.61]} rotation={[-Math.PI / 2, 0, 0]}>
+        <meshStandardMaterial color="#fef3c7" roughness={0.15} emissive="#fef3c7" emissiveIntensity={0.4} />
       </Cylinder>
-      <Cone args={[0.2, 0.15, 4]} position={[0.7, h + h * 0.5, 0.25]}>
-        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.7).getStyle()} roughness={0.5} />
-      </Cone>
-      {/* Entrance arches */}
-      {[-0.5, 0, 0.5].map((x, i) => (
-        <group key={`arch-${i}`}>
-          <Box args={[0.2, 0.05, 0.3]} position={[x, h * 0.42, 0.56]}>
-            <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.9).getStyle()} roughness={0.6} />
-          </Box>
-          <Box args={[0.04, h * 0.38, 0.04]} position={[x + 0.08, h * 0.21, 0.56]}>
-            <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.9).getStyle()} roughness={0.6} />
-          </Box>
-          <Box args={[0.04, h * 0.38, 0.04]} position={[x - 0.08, h * 0.21, 0.56]}>
-            <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.9).getStyle()} roughness={0.6} />
-          </Box>
-        </group>
-      ))}
-      {/* Platform with canopy */}
-      <Box args={[2.1, 0.08, 0.65]} position={[0, 0.04, -0.52]}>
-        <meshStandardMaterial color="#94a3b8" roughness={0.6} />
+      {/* Clock hands — on the vertical clock face */}
+      <Box args={[0.12, 0.015, 0.02]} position={[0.55, h * 0.73, 0.64]} rotation={[0, 0, 0.3]}>
+        <meshStandardMaterial color="#1e293b" roughness={0.5} />
       </Box>
-      <Box args={[1.8, 0.04, 0.35]} position={[0, 0.22, -0.5]}>
-        <meshStandardMaterial color="#d4d4d4" roughness={0.5} />
+      <Box args={[0.08, 0.015, 0.02]} position={[0.55, h * 0.71, 0.64]} rotation={[0, 0, -0.5]}>
+        <meshStandardMaterial color="#1e293b" roughness={0.5} />
       </Box>
-      {/* Canopy pillars */}
-      {[-0.6, -0.2, 0.2, 0.6].map((x, i) => (
-        <Cylinder key={`cpl-${i}`} args={[0.03, 0.03, 0.2, 6]} position={[x, 0.13, -0.5]}>
-          <meshStandardMaterial color="#64748b" roughness={0.4} metalness={0.5} />
-        </Cylinder>
+      {/* Entrance — open doorway */}
+      <Box args={[0.6, 0.45, 0.06]} position={[0, h * 0.28, 0.62]}>
+        <meshStandardMaterial color="#0f172a" roughness={0.8} />
+      </Box>
+      {/* Platform */}
+      <Box args={[2.2, 0.08, 0.6]} position={[0, 0.04, -0.5]}>
+        <meshStandardMaterial color="#d4d4d4" roughness={0.6} />
+      </Box>
+      {/* Platform edge stripe */}
+      <Box args={[2.2, 0.03, 0.08]} position={[0, 0.09, -0.22]}>
+        <meshStandardMaterial color="#fbbf24" roughness={0.4} />
+      </Box>
+      {/* Train car on tracks */}
+      <Box args={[1.6, 0.35, 0.3]} position={[0, 0.22, -0.6]}>
+        <meshStandardMaterial color="#dc2626" roughness={0.5} />
+      </Box>
+      <Box args={[1.5, 0.08, 0.32]} position={[0, 0.38, -0.6]}>
+        <meshStandardMaterial color="#b91c1c" roughness={0.4} />
+      </Box>
+      {/* Train windows */}
+      {[-0.5, -0.17, 0.17, 0.5].map((x, i) => (
+        <Box key={`tw-${i}`} args={[0.18, 0.12, 0.04]} position={[x, 0.28, -0.45]}>
+          <meshStandardMaterial color="#7dd3fc" roughness={0.2} emissive="#bae6fd" emissiveIntensity={0.15} />
+        </Box>
       ))}
       {/* Tracks */}
-      <Box args={[2.2, 0.03, 0.08]} position={[0, 0.02, -0.3]}>
-        <meshStandardMaterial color="#64748b" roughness={0.5} metalness={0.6} />
+      <Box args={[2.3, 0.02, 0.06]} position={[0, 0.02, -0.3]}>
+        <meshStandardMaterial color="#64748b" roughness={0.4} metalness={0.6} />
       </Box>
-      <Box args={[2.2, 0.03, 0.08]} position={[0, 0.02, -0.75]}>
-        <meshStandardMaterial color="#64748b" roughness={0.5} metalness={0.6} />
+      <Box args={[2.3, 0.02, 0.06]} position={[0, 0.02, -0.85]}>
+        <meshStandardMaterial color="#64748b" roughness={0.4} metalness={0.6} />
       </Box>
-      {/* Signal light */}
-      <Sphere args={[0.06, 6, 4]} position={[-0.8, h + 0.15, 0]}>
-        <meshStandardMaterial color="#ef4444" roughness={0.2} emissive="#ef4444" emissiveIntensity={0.5} />
+      {/* Signal lights — on roof top */}
+      <Sphere args={[0.08, 6, 4]} position={[-0.6, h * 0.88 + 0.7, 0.2]}>
+        <meshStandardMaterial color="#22c55e" roughness={0.2} emissive="#22c55e" emissiveIntensity={0.7} />
+      </Sphere>
+      <Sphere args={[0.08, 6, 4]} position={[0.6, h * 0.88 + 0.7, -0.2]}>
+        <meshStandardMaterial color="#ef4444" roughness={0.2} emissive="#ef4444" emissiveIntensity={0.7} />
       </Sphere>
     </group>
   );
@@ -830,21 +974,27 @@ function ForestTower3D({ color, height }: BProps) {
   for (let f = 0; f < floors; f++) {
     const y = 0.5 + f * (h / floors);
     const angle = f * 0.6;
-    // Balcony base
-    balconyElements.push(
-      <Box key={`fb-${f}`} args={[0.8, 0.06, 0.7]} position={[0, y, 0]}>
-        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(1.1).getStyle()} roughness={0.6} />
-      </Box>
-    );
-    // Tree clusters on balcony
-    [-0.2, 0.18].forEach((_ox, ti) => {
-      const tx = Math.cos(angle + ti * 1.5) * 0.28;
-      const tz = Math.sin(angle + ti * 1.5) * 0.2;
+    // 4 sides
+    [0, 1, 2, 3].forEach(si => {
+      const sa = si * Math.PI / 2 + f * 0.3;
+      const bx = Math.cos(sa) * 0.5;
+      const bz = Math.sin(sa) * 0.5;
+      // Balcony base
       balconyElements.push(
-        <Sphere key={`ft-${f}-${ti}`} args={[0.13, 6, 4]} position={[tx, y + 0.16, tz]}>
-          <meshStandardMaterial color={ti === 0 ? '#166534' : '#15803d'} roughness={1} />
-        </Sphere>
+        <Box key={`fb-${f}-${si}`} args={[0.6, 0.05, 0.15]} position={[bx, y, bz]} rotation={[0, -sa, 0]}>
+          <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(1.1).getStyle()} roughness={0.6} />
+        </Box>
       );
+      // Tree clusters on balcony
+      [-0.2, 0.18].forEach((_ox, ti) => {
+        const tx = bx + Math.cos(angle + ti * 1.5) * 0.15;
+        const tz = bz + Math.sin(angle + ti * 1.5) * 0.12;
+        balconyElements.push(
+          <Sphere key={`ft-${f}-${si}-${ti}`} args={[0.1, 6, 4]} position={[tx, y + 0.14, tz]}>
+            <meshStandardMaterial color={ti === 0 ? '#166534' : '#15803d'} roughness={1} />
+          </Sphere>
+        );
+      });
     });
   }
   return (
@@ -853,9 +1003,14 @@ function ForestTower3D({ color, height }: BProps) {
       <Box args={[0.55, h, 0.55]} position={[0, h / 2, 0]}>
         <meshStandardMaterial color={color} roughness={0.65} />
       </Box>
-      {/* Vertical greenery strips */}
+      {/* Vertical greenery strips — 4 sides */}
       {[-0.22, 0.22].map((x, i) => (
-        <Box key={`vg-${i}`} args={[0.08, h * 0.85, 0.08]} position={[x, h * 0.45, x]}>
+        <Box key={`vgx-${i}`} args={[0.08, h * 0.85, 0.08]} position={[x, h * 0.45, x]}>
+          <meshStandardMaterial color="#22c55e" roughness={0.8} />
+        </Box>
+      ))}
+      {[-0.22, 0.22].map((z, i) => (
+        <Box key={`vgz-${i}`} args={[0.08, h * 0.85, 0.08]} position={[z, h * 0.45, z]}>
           <meshStandardMaterial color="#22c55e" roughness={0.8} />
         </Box>
       ))}
@@ -1035,9 +1190,24 @@ function TradeCenter3D({ color, height }: BProps) {
       <Cone args={[0.2, h * 0.18, 6]} position={[0, h * 1.12, 0]}>
         <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(1.3).getStyle()} roughness={0.3} metalness={0.3} />
       </Cone>
-      {/* Vertical glass strips */}
+      {/* Vertical glass strips — 4 sides */}
       {[-0.4, 0, 0.4].map((x, i) => (
-        <Box key={`gs-${i}`} args={[0.08, h * 0.6, 0.04]} position={[x, h * 0.5, 0.76]}>
+        <Box key={`gsf-${i}`} args={[0.08, h * 0.6, 0.04]} position={[x, h * 0.5, 0.76]}>
+          <meshStandardMaterial color="#bae6fd" roughness={0.2} metalness={0.2} emissive="#38bdf8" emissiveIntensity={0.12} />
+        </Box>
+      ))}
+      {[-0.4, 0, 0.4].map((x, i) => (
+        <Box key={`gsb-${i}`} args={[0.08, h * 0.6, 0.04]} position={[x, h * 0.5, -0.76]}>
+          <meshStandardMaterial color="#bae6fd" roughness={0.2} metalness={0.2} emissive="#38bdf8" emissiveIntensity={0.12} />
+        </Box>
+      ))}
+      {[-0.4, 0, 0.4].map((z, i) => (
+        <Box key={`gsl-${i}`} args={[0.04, h * 0.6, 0.08]} position={[-0.76, h * 0.5, z]}>
+          <meshStandardMaterial color="#bae6fd" roughness={0.2} metalness={0.2} emissive="#38bdf8" emissiveIntensity={0.12} />
+        </Box>
+      ))}
+      {[-0.4, 0, 0.4].map((z, i) => (
+        <Box key={`gsr-${i}`} args={[0.04, h * 0.6, 0.08]} position={[0.76, h * 0.5, z]}>
           <meshStandardMaterial color="#bae6fd" roughness={0.2} metalness={0.2} emissive="#38bdf8" emissiveIntensity={0.12} />
         </Box>
       ))}
@@ -1264,6 +1434,168 @@ function Lab3D({ color, height }: BProps) {
   );
 }
 
+/* ====== RAINWATER HARVESTER ====== */
+function RainwaterHarvester3D({ color, height }: BProps) {
+  const h = height * 0.9;
+  return (
+    <group>
+      {/* base platform */}
+      <Box args={[1.6, 0.1, 1.6]} position={[0, 0.05, 0]}>
+        <meshStandardMaterial color="#64748b" roughness={0.8} />
+      </Box>
+      {/* tank body */}
+      <Cylinder args={[0.7, 0.7, h, 16]} position={[0, 0.1 + h / 2, 0]}>
+        <meshStandardMaterial color={color} roughness={0.5} />
+      </Cylinder>
+      {/* metal bands */}
+      {[0.25, 0.5, 0.75].map(f => (
+        <Cylinder key={`rb-${f}`} args={[0.72, 0.72, 0.06, 16]} position={[0, 0.1 + h * f, 0]}>
+          <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.6).getStyle()} roughness={0.3} metalness={0.4} />
+        </Cylinder>
+      ))}
+      {/* funnel top */}
+      <Cylinder args={[0.9, 0.68, 0.3, 16]} position={[0, 0.1 + h + 0.05, 0]}>
+        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.8).getStyle()} roughness={0.4} metalness={0.3} />
+      </Cylinder>
+      {/* funnel rim */}
+      <Cylinder args={[0.92, 0.92, 0.06, 16]} position={[0, 0.1 + h + 0.2, 0]}>
+        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.6).getStyle()} roughness={0.3} metalness={0.4} />
+      </Cylinder>
+      {/* downpipe */}
+      <Cylinder args={[0.06, 0.06, h * 0.55, 8]} position={[0.7, 0.1 + h * 0.65, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <meshStandardMaterial color="#94a3b8" roughness={0.5} metalness={0.5} />
+      </Cylinder>
+      {/* spigot */}
+      <Cylinder args={[0.05, 0.05, 0.25, 8]} position={[0.85, 0.1 + h * 0.25, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <meshStandardMaterial color="#64748b" roughness={0.4} metalness={0.6} />
+      </Cylinder>
+      {/* water drop at spigot */}
+      <Sphere args={[0.07, 8, 8]} position={[0.97, 0.1 + h * 0.08, 0]}>
+        <meshStandardMaterial color="#7dd3fc" roughness={0.1} emissive="#38bdf8" emissiveIntensity={0.3} />
+      </Sphere>
+    </group>
+  );
+}
+
+/* ====== AQUIFER RECHARGE ====== */
+function AquiferRecharge3D({ color, height }: BProps) {
+  const h = height * 1.1;
+  return (
+    <group>
+      {/* underground pipe (well casing going down) */}
+      <Cylinder args={[0.3, 0.35, h * 0.5, 16]} position={[0, -h * 0.2, 0]}>
+        <meshStandardMaterial color="#475569" roughness={0.7} />
+      </Cylinder>
+      {/* ground well head */}
+      <Cylinder args={[0.38, 0.4, h * 0.4, 16]} position={[0, h * 0.15, 0]}>
+        <meshStandardMaterial color={color} roughness={0.5} />
+      </Cylinder>
+      {/* well head rim */}
+      <Cylinder args={[0.42, 0.42, 0.08, 16]} position={[0, h * 0.35, 0]}>
+        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.7).getStyle()} roughness={0.3} metalness={0.3} />
+      </Cylinder>
+      {/* pump housing on top */}
+      <Box args={[0.5, 0.25, 0.5]} position={[0, h * 0.5, 0]}>
+        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.8).getStyle()} roughness={0.4} metalness={0.2} />
+      </Box>
+      {/* pump lever */}
+      <Box args={[0.06, 0.06, 0.4]} position={[0.3, h * 0.6, 0.15]} rotation={[0.3, 0, 0]}>
+        <meshStandardMaterial color="#94a3b8" roughness={0.4} metalness={0.5} />
+      </Box>
+      {/* lever handle */}
+      <Sphere args={[0.08, 8, 8]} position={[0.3, h * 0.62, 0.42]}>
+        <meshStandardMaterial color="#ef4444" roughness={0.3} />
+      </Sphere>
+      {/* roof cover */}
+      <Cylinder args={[0, 0.65, 0.18, 6]} position={[0, h * 0.62, 0]}>
+        <meshStandardMaterial color={new THREE.Color(color).multiplyScalar(0.6).getStyle()} roughness={0.5} />
+      </Cylinder>
+      {/* roof pole */}
+      <Cylinder args={[0.04, 0.04, h * 0.12, 8]} position={[0, h * 0.62, 0]}>
+        <meshStandardMaterial color="#78716c" roughness={0.6} />
+      </Cylinder>
+      {/* water level indicator tube */}
+      <Cylinder args={[0.04, 0.04, h * 0.25, 8]} position={[0.35, h * 0.2, 0.35]}>
+        <meshStandardMaterial color="#7dd3fc" roughness={0.2} emissive="#38bdf8" emissiveIntensity={0.2} />
+      </Cylinder>
+    </group>
+  );
+}
+
+/* ====== WETLAND RESTORATION ====== */
+function WetlandRestoration3D({ color, height }: BProps) {
+  const h = height * 0.7;
+  return (
+    <group>
+      {/* pond water */}
+      <Cylinder args={[1.1, 1.15, 0.08, 24]} position={[0, -0.02, 0]}>
+        <meshStandardMaterial color={color} roughness={0.15} metalness={0.1} emissive="#3b82f6" emissiveIntensity={0.1} />
+      </Cylinder>
+      {/* pond rim / bank */}
+      <Cylinder args={[1.2, 1.1, 0.12, 24]} position={[0, -0.01, 0]}>
+        <meshStandardMaterial color="#4a6741" roughness={0.8} />
+      </Cylinder>
+      {/* reeds — 5 reed clusters */}
+      {[-0.7, -0.35, 0, 0.35, 0.7].map((x, i) => {
+        const z = i % 2 === 0 ? 0.85 : -0.85;
+        const reedH = 0.4 + Math.random() * 0.4;
+        return (
+          <group key={`reed-${i}`}>
+            <Cylinder args={[0.03, 0.04, reedH, 6]} position={[x, reedH / 2 - 0.03, z]}>
+              <meshStandardMaterial color="#166534" roughness={0.6} />
+            </Cylinder>
+            {/* reed head (cattail) */}
+            <Cylinder args={[0.04, 0.02, 0.15, 6]} position={[x, reedH - 0.02, z]}>
+              <meshStandardMaterial color="#713f12" roughness={0.4} />
+            </Cylinder>
+            {/* extra reed offset */}
+            <Cylinder args={[0.025, 0.035, reedH * 0.7, 6]} position={[x + 0.08, reedH * 0.35 - 0.03, z + 0.05]}>
+              <meshStandardMaterial color="#15803d" roughness={0.6} />
+            </Cylinder>
+          </group>
+        );
+      })}
+      {/* lotus flowers */}
+      {[[-0.6, 0.4], [0.5, -0.3], [-0.2, -0.5]].map(([lx, lz], i) => (
+        <group key={`lotus-${i}`}>
+          {/* lily pad */}
+          <Cylinder args={[0.18, 0.02, 0.04, 8]} position={[lx, -0.01, lz]}>
+            <meshStandardMaterial color="#22c55e" roughness={0.3} />
+          </Cylinder>
+          {/* lotus petals */}
+          {[0, Math.PI / 3, Math.PI * 2 / 3].map((angle, j) => (
+            <Box key={`petal-${j}`} args={[0.08, 0.03, 0.13]} position={[
+              lx + Math.cos(angle) * 0.04,
+              0.04,
+              lz + Math.sin(angle) * 0.04,
+            ]} rotation={[0.3, angle, 0]}>
+              <meshStandardMaterial color={i === 0 ? '#fbbf24' : i === 1 ? '#f472b6' : '#fef3c7'} roughness={0.2} emissive={i === 0 ? '#fbbf24' : i === 1 ? '#f472b6' : '#fef3c7'} emissiveIntensity={0.15} />
+            </Box>
+          ))}
+        </group>
+      ))}
+      {/* wooden boardwalk */}
+      <Box args={[0.25, 0.05, 1.0]} position={[1.0, h * 0.1, 0]}>
+        <meshStandardMaterial color="#a16207" roughness={0.7} />
+      </Box>
+      <Box args={[0.5, 0.05, 0.72]} position={[0.5, h * 0.18, 0]}>
+        <meshStandardMaterial color="#b45309" roughness={0.7} />
+      </Box>
+      {/* boardwalk railing posts */}
+      {[-0.4, 0.4].map(z => (
+        <group key={`rail-${z}`}>
+          <Cylinder args={[0.03, 0.03, h * 0.5, 6]} position={[0.5, h * 0.3, z]}>
+            <meshStandardMaterial color="#78350f" roughness={0.6} />
+          </Cylinder>
+          <Box args={[0.04, 0.04, 0.9]} position={[0.5, h * 0.5, 0]}>
+            <meshStandardMaterial color="#78350f" roughness={0.6} />
+          </Box>
+        </group>
+      ))}
+    </group>
+  );
+}
+
 /* ====== MAIN ====== */
 interface Props { building: Building }
 export default function BuildingModel3D({ building }: Props) {
@@ -1300,6 +1632,9 @@ export default function BuildingModel3D({ building }: Props) {
     case 'charging_station': return <ChargingStation3D {...p} />;
     case 'geothermal': return <Geothermal3D {...p} />;
     case 'lab': return <Lab3D {...p} />;
+    case 'rainwater': return <RainwaterHarvester3D {...p} />;
+    case 'aquifer': return <AquiferRecharge3D {...p} />;
+    case 'wetland': return <WetlandRestoration3D {...p} />;
     default: return <Block3D {...p} />;
   }
 }

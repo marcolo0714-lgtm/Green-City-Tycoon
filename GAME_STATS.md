@@ -19,7 +19,7 @@ Events are one-time purchases that provide **permanent compounding multipliers**
 | 2 | Clean Energy Kickstart ⚡ | $3K | 3 | 200 | **Ren≥10%** | Inc ×2.0, Poll ×0.5, Res ×1.5, Cap ×1.5 |
 | 3 | Coastal Shield Program 🛡️ | $8K | 3 | 500 | **Hap≥35%** | Inc ×2.0, Res ×1.5, Cap ×2.0, Grow ×2.5 |
 | 4 | Solar City Initiative ☀️ | $20K | 4 | 1,500 | **Ren≥20%** | Inc ×2.5, Ren ×2.0, Cap ×2.0, Grow ×2.5 |
-| 5 | Metro Transit Network 🚇 | $50K | 4 | 5K | **Hap≥40%** | Inc ×2.5, Poll ×0.5, Cap ×2.5, Grow ×3.0 |
+| 5 | Water Security Initiative 🚰 | $50K | 4 | 5K | **Hap≥65%** | Inc ×2.5, Poll ×0.5, Cap ×2.5, Grow ×3.0 |
 | 6 | Green Architecture Expo 🏛️ | $120K | 5 | 15K | **Res≥25%** | Inc ×2.5, Cap ×3.0, Grow ×3.0 |
 | 7 | Water Renaissance 💧 | $300K | 5 | 50K | **Ren≥40%** | Inc ×3.0, Res ×2.0, Cap ×3.0, Grow ×3.5 |
 | 8 | Climate Innovation District 🔬 | $800K | 6 | 150K | **Res≥35%** | Inc ×3.0, Ren ×2.5, Poll ×0.4, Cap ×3.5 |
@@ -41,7 +41,7 @@ All multipliers stack **multiplicatively** (cumulative). Events have **no prereq
 
 ### Progression Example
 
-Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 EV Hub:
+Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 Rainwater Harvester:
 
 | | 0 events | After 2 | After 4 | After 6 | After 8 | After 10 |
 |---|---|---|---|---|---|---|
@@ -62,7 +62,7 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 EV Hub
 | #2 | Wind Turbine, Recycling Center, Composting Hub |
 | #3 | Seawall, Wave Absorber |
 | #4 | Geothermal Plant, Office Tower |
-| #5 | Transit Hub, Metro Hub |
+| #5 | Aquifer Recharge, Wetland Restoration |
 | #6 | Vertical Farm, Vertical Forest Tower |
 | #7 | Desalination, Wave Converter |
 | #8 | Research Lab, Observatory, Emergency Center |
@@ -77,12 +77,12 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 EV Hub
 
 | Building | Cost | Inc | Poll | Hap | Res | Ren | Category |
 |---|---|---|---|---|---|---|---|
-| House | $20 | +10 | +10 | +1 | — | — | Economic |
+| House | $20 | +10 | +10 | +0.1 | — | — | Economic |
 | Shop | $45 | +22 | +15 | — | — | — | Economic |
-| Park | $18 | 0 | -4 | +3 | — | — | Green |
-| Green Roof | $40 | 0 | -2 | +1 | +3 | — | Green |
+| Park | $18 | 0 | -4 | +0.3 | — | — | Green |
+| Green Roof | $40 | 0 | -2 | +0.1 | +3 | — | Green |
 | Water Purifier | $60 | 0 | -5 | — | +2 | — | Water |
-| EV Charging Hub | $50 | 0 | -1 | — | — | **+4** | Transport |
+| Rainwater Harvester | $55 | +6 | -1 | — | +1 | — | Water |
 
 ### Unlockable Buildings
 
@@ -96,19 +96,19 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 EV Hub
 | Wave Absorber | $700 | 0 | 0 | — | +18 | — | Coastal | #3 |
 | Geothermal Plant | $450 | +26 | -5 | — | +2 | +8 | Energy | #4 |
 | Office Tower | $350 | +35 | +5 | — | — | — | Economic | #4 |
-| Transit Hub | $300 | +18 | -3 | — | +1 | +3 | Transport | #5 |
-| Metro Hub | $600 | +38 | -4 | — | +3 | — | Transport | #5 |
-| Vertical Farm | $450 | +16 | -4 | +4 | — | — | Green | #6 |
-| Vertical Forest | $800 | +24 | -9 | +6 | — | — | Green | #6 |
-| Desalination | $650 | +20 | -4 | +2 | +4 | — | Water | #7 |
+| Aquifer Recharge | $320 | +10 | -3 | — | +3 | — | Water | #5 |
+| Wetland Restoration | $580 | +15 | -7 | +0.2 | +1 | — | Water | #5 |
+| Vertical Farm | $450 | +16 | -4 | +0.4 | — | — | Green | #6 |
+| Vertical Forest | $800 | +24 | -9 | +0.6 | — | — | Green | #6 |
+| Desalination | $650 | +20 | -4 | +0.2 | +4 | — | Water | #7 |
 | Wave Converter | $550 | +18 | -2 | — | +2 | +5 | Energy | #7 |
 | Research Lab | $1000 | +24 | -4 | — | +5 | +4 | Science | #8 |
-| Observatory | $800 | 0 | -2 | +3 | +7 | — | Science | #8 |
+| Observatory | $800 | 0 | -2 | +0.3 | +7 | — | Science | #8 |
 | Emergency Center | $1400 | 0 | 0 | — | +16 | — | Science | #8 |
-| Factory | $1800 | +50 | +15 | -2 | — | — | Economic | #9 |
+| Factory | $1800 | +50 | +15 | -0.2 | — | — | Economic | #9 |
 | Smart Grid Center | $3500 | +55 | -5 | — | +7 | +7 | Energy | #9 |
-| Global Trade Hub | $6000 | +110 | 0 | +5 | +4 | — | Economic | #9 |
-| World Peace Garden | $12000 | 0 | -14 | +14 | — | — | Green | #10 |
+| Global Trade Hub | $6000 | +110 | 0 | +0.5 | +4 | — | Economic | #9 |
+| World Peace Garden | $12000 | 0 | -14 | +1.4 | — | — | Green | #10 |
 
 ---
 
@@ -143,11 +143,14 @@ pollution = clamp(0, 100, scaledPollution)
 
 ### Happiness
 ```
-base = 40
-penalty = pollution × 0.5 + overcrowdingPenalty
-happiness = clamp(0, 100, base + sum(happinessBoost) - penalty)
+base = 40 (starting value)
+perTick += sum of all completed buildings' happinessBoost (per-day rates)
+perTick -= min(15, overcrowdPct × 2)           // -2 per 10% over cap, max 15/day
+perTick -= min(15, (pollution - 50) × 1.0)      // if pollution > 50, max 15/day
+disaster -= one-off deduction from applyDisaster
+clamp(0, 100)
 ```
-Happiness is **not** affected by event multipliers — it reflects building placement and pollution. Used as a punishment lever for overcrowding and bad decisions.
+Happiness is a **persistent accumulator** — not recomputed from scratch each tick. Buildings add small per-day rates (e.g. Park +0.10/day, House +0.03/day). Penalties are capped at 15% per source per day. Happiness is **not** affected by event multipliers. Used as a punishment lever for overcrowding and pollution, and disasters cause lasting happiness drops.
 
 ### Renewable Energy %
 ```
@@ -278,7 +281,6 @@ Base values:
 
 **Defenses reduce destruction:**
 - Emergency Center: -1 destroyed
-- Every 2 Parks: -1 destroyed
 - Every 20 resilience: -1 destroyed (minimum 1)
 
 M=4 → L5: 6 buildings destroyed, $30K/bldg, ~$180K total.
@@ -295,7 +297,7 @@ Base values:
 | 4 | **2,000** | **-40** | **$150,000** |
 | 5 | **100,000** | **-60** | **$500,000** |
 
-Defense: each Park saves 1 population (max 5). M=4 → L5 pop loss = 30K, money = $150K.
+Defense: each water building reduces population loss by 15% (max 90%). Water buildings also save 1 happiness each (max 5). M=4 (70% reduction) → L5 with 5 water buildings: pop loss = 30K × 0.25 = 7,500, money = $150K.
 
 ### 💨 Smog
 
@@ -309,7 +311,7 @@ Base values:
 | 4 | **+75** | **100** | **-40** |
 | 5 | **+95** | **500** | **-60** |
 
-Defense: each clean-energy building reduces pollution hit by 2 and pop/happiness loss by 1. M=4 → L5 pollution = +29, pop loss = 150.
+Defense: each green building reduces pollution and population loss by 15% (max 90%). M=4 → L5 with 5 green buildings: pollution = +29 × 0.25 = +7, pop loss = 150 × 0.25 = 38.
 
 ---
 

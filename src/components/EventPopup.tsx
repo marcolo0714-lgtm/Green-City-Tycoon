@@ -6,7 +6,7 @@ function Illustration({ eventId }: { eventId: string }) {
     case 'event_2': return <CleanEnergy />;
     case 'event_3': return <CoastalShield />;
     case 'event_4': return <Geothermal />;
-    case 'event_5': return <MetroTransit />;
+    case 'event_5': return <WaterSecurity />;
     case 'event_6': return <GreenArchitecture />;
     case 'event_7': return <WaterRenaissance />;
     case 'event_8': return <ClimateInnovation />;
@@ -91,19 +91,31 @@ function Geothermal() {
   );
 }
 
-/* 5: Metro Transit — keep as is */
-function MetroTransit() {
+/* 5: Water Security — harvester tank, aquifer layer, wetland */
+function WaterSecurity() {
   return (
-    <div className="illo illo-mt">
-      <div className="mt-ceiling" />
-      <div className="mt-pillar mt-p1" />
-      <div className="mt-pillar mt-p2" />
-      <div className="mt-pillar mt-p3" />
-      <div className="mt-platform" />
-      <div className="mt-rail mt-r1" />
-      <div className="mt-rail mt-r2" />
-      <div className="mt-sign" />
-      <div className="mt-train" />
+    <div className="illo illo-ws">
+      <div className="ws-sky" />
+      <div className="ws-cloud ws-c1" />
+      <div className="ws-cloud ws-c2" />
+      <div className="ws-rain ws-r1" />
+      <div className="ws-rain ws-r2" />
+      <div className="ws-rain ws-r3" />
+      <div className="ws-tank">
+        <div className="ws-tband" />
+        <div className="ws-tband ws-tb2" />
+      </div>
+      <div className="ws-ground" />
+      <div className="ws-aquifer" />
+      <div className="ws-drop ws-d1" />
+      <div className="ws-drop ws-d2" />
+      <div className="ws-drop ws-d3" />
+      <div className="ws-wetland">
+        <div className="ws-reed ws-rd1" />
+        <div className="ws-reed ws-rd2" />
+        <div className="ws-reed ws-rd3" />
+        <div className="ws-lotus" />
+      </div>
     </div>
   );
 }
