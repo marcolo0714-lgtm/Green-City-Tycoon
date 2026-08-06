@@ -164,7 +164,7 @@ function recalculateMeters(grid: Grid, currentMeters: GameMeters, buffs: ActiveB
   const housingCapacity = Math.floor((ecoCount * 250 + greenCount * 50) * buffs.popCapMultiplier);
   const displayHappiness = currentMeters.happiness / 10;
   const popChange = housingCapacity > 0
-    ? Math.round(displayHappiness >= 30 ? (displayHappiness / 100) * 25 * buffs.popGrowthMultiplier : -5)
+    ? Math.round(displayHappiness >= 30 ? (displayHappiness / 100) * 60 * buffs.popGrowthMultiplier : -5)
     : -Math.round(currentMeters.population * 0.2);
   const rawPop = currentMeters.population + popChange;
   const overcrowdCap = housingCapacity > 0 ? Math.floor(housingCapacity * 2.0) : 0;

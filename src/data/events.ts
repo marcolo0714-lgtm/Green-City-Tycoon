@@ -70,7 +70,7 @@ export const EVENTS: GameEvent[] = [
     description: 'Create a dedicated climate-tech research zone with labs, an observatory, emergency centers, and a cutting-edge research hub.',
     popupDescription: 'Beakers bubble, telescopes scan the skies, and brilliant minds collaborate in gleaming new labs. Your city is now a global center for climate science and innovation! 🔬',
     conditions: { population: 150000, resilience: 35 },
-    effects: { incomeMultiplier: 3.0, renewableMultiplier: 1.7, pollutionMultiplier: 0.4, popCapMultiplier: 3.5 },
+    effects: { incomeMultiplier: 3.0, popGrowthMultiplier: 3.0, pollutionMultiplier: 0.4, popCapMultiplier: 3.5 },
     unlocksBuildings: ['research_lab', 'observatory', 'emergency_center'],
   },
   {

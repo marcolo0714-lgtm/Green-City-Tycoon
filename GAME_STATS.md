@@ -22,7 +22,7 @@ Events are one-time purchases that provide **permanent compounding multipliers**
 | 5 | Water Security Initiative 🚰 | $50K | 4 | 5K | **Hap≥65%** | Inc ×2.5, Poll ×0.5, Cap ×2.5, Grow ×3.0 |
 | 6 | Green Architecture Expo 🏛️ | $120K | 5 | 15K | **Res≥25%** | Inc ×2.5, Cap ×3.0, Grow ×3.0 |
 | 7 | Water Renaissance 💧 | $300K | 5 | 50K | **Ren≥40%** | Inc ×3.0, Res ×2.0, Ren ×1.7, Grow ×3.0 |
-| 8 | Climate Innovation District 🔬 | $800K | 6 | 150K | **Res≥35%** | Inc ×3.0, Ren ×2.5, Poll ×0.4, Cap ×3.5 |
+| 8 | Climate Innovation District 🔬 | $800K | 6 | 150K | **Res≥35%** | Inc ×3.0, Grow ×3.0, Poll ×0.4, Cap ×3.5 |
 | 9 | Smart Resilient City 🏙️ | $2M | 7 | 500K | **Res≥30%** | Inc ×3.5, Cap ×4.0, Grow ×4.0 |
 | 10 | World Sustainability Summit 🕊️ | $5M | 8 | 2M | **Hap≥70%** | Inc ×4.0, Res ×2.0, Ren ×2.0, Poll ×0.4, Cap ×5.0, Grow ×5.0 |
 
@@ -36,8 +36,8 @@ All multipliers stack **multiplicatively** (cumulative). Events have **no prereq
 | 2 | ×4.0 | ×0.5 | ×1.5 | ×2.25 | ×2.0 |
 | 4 | ×20 | ×0.5 | ×2.25 | ×9.0 | ×12.5 |
 | 6 | ×125 | ×0.25 | ×2.25 | ×67.5 | ×112.5 |
-| 8 | ×1,125 | ×0.1 | ×2.25 | ×236 | ×337.5 |
-| 10 | ×18,000 | **×0.04** | ×9.0 | ×5,906 | ×1,687.5 |
+| 8 | ×1,125 | ×0.1 | ×2.25 | ×236 | ×1,013 |
+| 10 | ×18,000 | **×0.04** | ×9.0 | ×4,725 | ×20,250 |
 
 ### Progression Example
 
@@ -51,8 +51,8 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 Rainwa
 | **Shop pollution** (base 15) | 15 | 7.5 | 7.5 | 3.75 | 1.5 | 0.6 |
 | **Resilience mult** | ×1 | ×1.5 | ×2.25 | ×2.25 | ×2.25 | ×9.0 |
 | **Green Roof resilience** (base 3) | 3 | 4.5 | 6.75 | 6.75 | 6.75 | 27 |
-| **Pop Growth mult** | ×1 | ×2 | ×12.5 | ×112.5 | ×112.5 | ×562.5 |
-| **Pop growth/day** (at 80% hap) | 20 | 40 | 250 | 2,250 | 2,250 | 11,250 |
+| **Pop Growth mult** | ×1 | ×2 | ×12.5 | ×112.5 | ×1,013 | ×20,250 |
+| **Pop growth/day** (at 80% hap) | 48 | 96 | 600 | 5,400 | 48,624 | 972,000 |
 
 ### Unlocked Buildings by Event
 
@@ -127,9 +127,9 @@ Starting: $300
 housingCapacity = floor((ecoCount × 250 + greenCount × 50) × activeBuffs.popCapMultiplier)
 popGrowthMultiplier = activeBuffs.popGrowthMultiplier
 popChange = housingCapacity > 0
-  ? round(happiness ≥ 30 ? (happiness / 100) × 25 × popGrowthMultiplier : -5)
+  ? round(happiness ≥ 30 ? (happiness / 100) × 60 × popGrowthMultiplier : -5)
   : -round(population × 0.2)
-overcrowdCap = floor(housingCapacity × 1.2)
+overcrowdCap = floor(housingCapacity × 2.0)
 population = clamp(pop + popChange, 0, overcrowdCap)
 ```
 Without housing, declines by **20% of current population per day**. Overcrowding (pop > housing capacity) causes happiness penalty (-2 per 10% over).
