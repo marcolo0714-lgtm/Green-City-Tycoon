@@ -349,6 +349,19 @@ const OBJECTIVES: Objective[] = [
   { id: 'money_10M', text: 'Reach $10,000,000', check: (s) => s.money >= 10000000, requires: 'money_500k' },
 ];
 
+const ADJACENCY_PAIRS: Array<{ a: string; b: string; effect: number; label: string }> = [
+  { a: 'park', b: 'house', effect: 2, label: 'Park + House' },
+  { a: 'water_purifier', b: 'house', effect: 2, label: 'Water Purifier + House' },
+  { a: 'vertical_forest', b: 'house', effect: 3, label: 'Vertical Forest + House' },
+  { a: 'recycling', b: 'shop', effect: 2, label: 'Recycling Center + Shop' },
+  { a: 'research_lab', b: 'observatory', effect: 3, label: 'Research Lab + Observatory' },
+  { a: 'factory', b: 'house', effect: -5, label: 'Factory + House' },
+  { a: 'factory', b: 'park', effect: -5, label: 'Factory + Park' },
+  { a: 'wind_turbine', b: 'house', effect: -5, label: 'Wind Turbine + House' },
+  { a: 'factory', b: 'vertical_farm', effect: -5, label: 'Factory + Vertical Farm' },
+  { a: 'office', b: 'green_roof', effect: -5, label: 'Office Tower + Green Roof' },
+];
+
 const ADVISORY_TRIGGERS: Array<{ id: string; check: (state: GameState, prev: GameMeters) => boolean; message: string; canRepeat?: boolean }> = [
   { id: 'first_done', check: (s) => s.grid.some(r => r.some(c => c !== null)) && s.justCompleted.length > 0, message: 'Income is now active! Check your money meter.' },
   { id: 'tsunami_hint', check: (s) => s.disasterLevels.tsunami >= 1, message: '🌊 Tsunami hit! Build Seawalls (edge tiles) and Wave Absorbers to protect your coast.' },
@@ -410,6 +423,7 @@ export const useGameStore = create<GameState>((set) => ({
   devRevealAll: false,
   eventPopups: [] as import('../types').EventPopupData[],
   prePopupSpeed: 1,
+  seenAdjacencyPairs: [] as string[],
 
   selectBuilding: (b) => set({ selectedBuilding: b }),
 
@@ -646,8 +660,36 @@ export const useGameStore = create<GameState>((set) => ({
       pollutionStreak = 0;
     }
 
+    // Adjacency synergies — scan completed buildings only for paired adjacencies
+    let adjacencyBonus = 0;
+    const adjHints: string[] = [];
+    const newAdjSeen = [...(state.seenAdjacencyPairs || [])];
+    for (let ri = 0; ri < GRID_SIZE; ri++) {
+      for (let ci = 0; ci < GRID_SIZE; ci++) {
+        const a = gridAfterDisaster[ri][ci];
+        if (!a || newCMap[`${ri},${ci}`] !== undefined) continue;
+        const dirs: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+        for (const [dr, dc] of dirs) {
+          const nr = ri + dr, nc = ci + dc;
+          const n = gridAfterDisaster[nr]?.[nc];
+          if (!n || newCMap[`${nr},${nc}`] !== undefined) continue;
+          for (const pair of ADJACENCY_PAIRS) {
+            if ((a.id === pair.a && n.id === pair.b) || (a.id === pair.b && n.id === pair.a)) {
+              adjacencyBonus += pair.effect;
+              const key = [pair.a, pair.b].sort().join('_');
+              if (!newAdjSeen.includes(key)) {
+                newAdjSeen.push(key);
+                const sign = pair.effect >= 0 ? '+' : '';
+                adjHints.push(`🏗️ Synergy! ${pair.label} adjacency gives ${sign}${Number((pair.effect / 10).toFixed(1))}% happiness/day.`);
+              }
+            }
+          }
+        }
+      }
+    }
+
     // Persistent happiness at ×10 scale (integer arithmetic)
-    const happyDelta = sumBuildingStat(active, 'happinessBoost');
+    const happyDelta = sumBuildingStat(active, 'happinessBoost') + adjacencyBonus;
     let newHappiness = state.happiness + happyDelta - overcrowdPenalty - pollutionHapPenalty;
     // Apply disaster one-off deduction if present
     if (extraMeters.happiness !== undefined && extraMeters.happiness < state.happiness) {
@@ -711,10 +753,11 @@ export const useGameStore = create<GameState>((set) => ({
       damageReport, minigameStats,
       resilienceDecay, minigamePlayed,
       pollutionStreak, overcrowdStreak,
-      completedObjectives, seenAdvisories,
+      completedObjectives, seenAdvisories: [...state.seenAdvisories, ...adjHints.map(m => ({ id: `adj_${Date.now()}_${m.length}`, message: m }))],
       repeatableAdvisories,
       eventsOrganized, eventTimers: newEventTimers, activeBuffs,
       eventPopups: popups, prePopupSpeed: newPrePopupSpeed,
+      seenAdjacencyPairs: newAdjSeen,
       gameSpeed: newGameSpeed,
       gameResult: gameOver || (won ? 'win' : null),
       hasWon: state.hasWon || (won ? true : false),
@@ -930,6 +973,7 @@ export const useGameStore = create<GameState>((set) => ({
     devRevealAll: false,
     eventPopups: [] as import('../types').EventPopupData[],
     prePopupSpeed: 1,
+    seenAdjacencyPairs: [] as string[],
   }),
 
   continueGame: () => set({ gameResult: null, gameSpeed: 1, hasWon: true }),

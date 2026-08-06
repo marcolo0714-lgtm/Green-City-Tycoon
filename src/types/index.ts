@@ -155,6 +155,7 @@ export interface GameState extends GameMeters {
   devDisasterLevel: number;
   devRevealAll: boolean;
   eventPopups: EventPopupData[];
+  seenAdjacencyPairs: string[];
   prePopupSpeed: GameSpeed;
   selectBuilding: (building: Building | null) => void;
   placeBuilding: (row: number, col: number) => void;
