@@ -164,12 +164,12 @@ export default function NotificationOverlay() {
                 <span className="mstats-value">{damageReport.population}</span>
               </div>
             )}
-            {damageReport.happiness > 0 && (
-              <div className="mstats-row">
-                <span className="mstats-label">Happiness Drop</span>
-                <span className="mstats-value">-{damageReport.happiness}%</span>
-              </div>
-            )}
+      {damageReport.happiness > 0 && (
+        <div className="mstats-row">
+          <span className="mstats-label">Happiness Drop</span>
+          <span className="mstats-value">-{Number((damageReport.happiness / 10).toFixed(1))}%</span>
+        </div>
+      )}
             {damageReport.resilience > 0 && (
               <div className="mstats-row">
                 <span className="mstats-label">Resilience Drop</span>

@@ -131,7 +131,7 @@ export default function BuildingMenu() {
                     if (b.income) stats.push({ value: b.income, cls: 'income', title: 'Income/day', prefix: '+', emoji: '💰' });
                     if (b.pollution < 0) stats.push({ value: -b.pollution, cls: 'clean', title: 'Air Quality', prefix: '+', emoji: '🌿' });
                     if (b.pollution > 0) stats.push({ value: -b.pollution, cls: 'dirty', title: 'Air Quality', prefix: '', emoji: '🌿' });
-                    if (b.happinessBoost !== 0) stats.push({ value: b.happinessBoost, cls: b.happinessBoost > 0 ? 'happiness' : 'dirty', title: 'Happiness effect', prefix: b.happinessBoost > 0 ? '+' : '', emoji: '😊' });
+                    if (b.happinessBoost !== 0) stats.push({ value: Number((b.happinessBoost / 10).toFixed(1)), cls: b.happinessBoost > 0 ? 'happiness' : 'dirty', title: 'Happiness/day', prefix: b.happinessBoost > 0 ? '+' : '', emoji: '😊' });
                     if (b.resilienceBoost > 0) stats.push({ value: b.resilienceBoost, cls: 'resilience', title: 'Resilience boost', prefix: '+', emoji: '🛡️' });
                     if (b.renewableBoost > 0) stats.push({ value: b.renewableBoost, cls: 'renewable', title: 'Renewable energy boost', prefix: '+', emoji: '⚡' });
                     return (
@@ -190,7 +190,7 @@ export default function BuildingMenu() {
             const condRows: { met: boolean; label: string }[] = [];
             const c = ev.conditions;
             if (c.population !== undefined) condRows.push({ met: population >= c.population, label: `👥 Population ≥ ${fmt(c.population)}` });
-            if (c.happiness !== undefined) condRows.push({ met: happiness >= c.happiness, label: `😊 Happiness ≥ ${c.happiness}%` });
+            if (c.happiness !== undefined) condRows.push({ met: happiness >= c.happiness, label: `😊 Happiness ≥ ${Number((c.happiness / 10).toFixed(1))}%` });
             if (c.pollution !== undefined) condRows.push({ met: pollution <= c.pollution, label: `🌿 Air Quality ≥ ${100 - c.pollution}%` });
             if (c.renewablePct !== undefined) condRows.push({ met: renewablePct >= c.renewablePct, label: `⚡ Renewable ≥ ${c.renewablePct}%` });
             if (c.resilience !== undefined) condRows.push({ met: resilience >= c.resilience, label: `🛡️ Resilience ≥ ${c.resilience}%` });

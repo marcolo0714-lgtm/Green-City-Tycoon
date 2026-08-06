@@ -27,7 +27,7 @@ function MeterBar({ label, value, max = 100, color, icon, suffix = '', delta, de
 
   const isPositive = delta && delta > 0;
   const deltaLabel = delta && delta !== 0
-    ? `${isPositive ? '+' : ''}${Number.isInteger(delta) ? delta : delta.toFixed(0)}${suffix}`
+    ? `${isPositive ? '+' : ''}${Number((delta).toFixed(1))}${suffix}`
     : '';
 
   return (
@@ -68,7 +68,7 @@ const METER_ADJUSTERS = [
   { key: 'money' as const, emoji: '💰', label: 'Money', adjStep: 1000000 },
   { key: 'population' as const, emoji: '👥', label: 'Population', adjStep: 500000 },
   { key: 'pollution' as const, emoji: '🌿', label: 'Air Quality', adjStep: 10, invert: true },
-  { key: 'happiness' as const, emoji: '😊', label: 'Happiness', adjStep: 10 },
+  { key: 'happiness' as const, emoji: '😊', label: 'Happiness', adjStep: 100 },
   { key: 'renewablePct' as const, emoji: '⚡', label: 'Renewable', adjStep: 10 },
   { key: 'resilience' as const, emoji: '🛡️', label: 'Resilience', adjStep: 10 },
 ];
@@ -120,8 +120,8 @@ export default function MeterPanel() {
       <MeterBar label="Air Quality" value={100 - pollution}
         color={pollution > 50 ? '#ef4444' : '#22c55e'} icon="🌿"
         suffix="%" delta={deltas.pollution !== undefined ? -deltas.pollution : undefined} deltaKey={`aq-${tickCount}`} />
-      <MeterBar label="Happiness" value={happiness} color="#06b6d4" icon="😊"
-        suffix="%" delta={deltas.happiness} deltaKey={`hap-${tickCount}`} />
+      <MeterBar label="Happiness" value={Number((happiness / 10).toFixed(1))} color="#06b6d4" icon="😊"
+        suffix="%" delta={deltas.happiness !== undefined ? Number((deltas.happiness / 10).toFixed(1)) : undefined} deltaKey={`hap-${tickCount}`} />
       <MeterBar label="Renewable" value={renewablePct} color="#f97316" icon="⚡"
         suffix="%" delta={deltas.renewablePct} deltaKey={`ren-${tickCount}`} />
       <MeterBar label="Resilience" value={resilience} color="#8b5cf6" icon="🛡️"

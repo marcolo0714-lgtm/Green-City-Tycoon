@@ -340,7 +340,7 @@ const BuildingOnTile = memo(function BuildingOnTile({
             )}
             {building.happinessBoost !== 0 && (
               <div className={`build-popup-stat ${building.happinessBoost > 0 ? 'up' : 'down'}`}>
-                😊 {building.happinessBoost > 0 ? '+' : ''}{building.happinessBoost} happiness
+                😊 {building.happinessBoost > 0 ? '+' : ''}{Number((building.happinessBoost / 10).toFixed(1))} happiness
               </div>
             )}
           </div>

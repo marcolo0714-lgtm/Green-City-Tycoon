@@ -141,6 +141,8 @@ export interface GameState extends GameMeters {
   minigameStats: { score: number; pct: number } | null;
   damageReport: { destroyed: number; money: number; population: number; happiness: number; resilience: number; pollution: number } | null;
   resilienceDecay: number;
+  pollutionStreak: number;
+  overcrowdStreak: number;
   meterOffsets: { pollution: number; happiness: number; renewablePct: number; resilience: number };
   meterDeltas: MeterDeltas; justCompleted: string[];
   destroyedTiles: string[];

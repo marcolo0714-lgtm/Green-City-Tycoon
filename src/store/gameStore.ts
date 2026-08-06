@@ -162,11 +162,12 @@ function recalculateMeters(grid: Grid, currentMeters: GameMeters, buffs: ActiveB
   const resilience = Math.min(100, scaledResilience);
 
   const housingCapacity = Math.floor((ecoCount * 250 + greenCount * 50) * buffs.popCapMultiplier);
+  const displayHappiness = currentMeters.happiness / 10;
   const popChange = housingCapacity > 0
-    ? Math.round(currentMeters.happiness >= 30 ? (currentMeters.happiness / 100) * 25 * buffs.popGrowthMultiplier : -5)
+    ? Math.round(displayHappiness >= 30 ? (displayHappiness / 100) * 25 * buffs.popGrowthMultiplier : -5)
     : -Math.round(currentMeters.population * 0.2);
   const rawPop = currentMeters.population + popChange;
-  const overcrowdCap = housingCapacity > 0 ? Math.floor(housingCapacity * 1.2) : 0;
+  const overcrowdCap = housingCapacity > 0 ? Math.floor(housingCapacity * 2.0) : 0;
   const newPopulation = housingCapacity > 0
     ? Math.min(overcrowdCap, rawPop)
     : Math.max(0, rawPop);
@@ -194,7 +195,7 @@ function checkWarnings(meters: GameMeters, existing: Warning[]): Warning[] {
   add('money', 'City is nearly bankrupt!', meters.money < 200);
   add('population', 'Citizens are leaving!', meters.population < 50);
   add('pollution', 'Pollution is choking the city!', meters.pollution > 80);
-  add('happiness', 'Citizens are rioting!', meters.happiness < 20);
+  add('happiness', 'Citizens are rioting!', meters.happiness < 200);
   return next;
 }
 
@@ -204,7 +205,7 @@ function checkGameOver(warnings: Warning[]): 'lose' | null {
 }
 
 function checkWin(meters: GameMeters): boolean {
-  return meters.money >= 10000000 && meters.population >= 5000000 && meters.happiness >= 95
+  return meters.money >= 10000000 && meters.population >= 5000000 && meters.happiness >= 950
     && meters.resilience >= 95 && meters.renewablePct >= 95 && meters.pollution <= 5;
 }
 
@@ -279,7 +280,7 @@ function applyDisaster(
     }
     m.money -= destCount * costPer;
     m.resilience = Math.max(0, m.resilience - Math.round(TSUNAMI_RES[L - 1] * pct));
-    m.happiness = Math.max(0, m.happiness - Math.round(TSUNAMI_HAP[L - 1] * pct));
+    m.happiness = Math.max(0, m.happiness - Math.round(TSUNAMI_HAP[L - 1] * pct * 10));
   } else if (type === 'earthquake') {
     const maxDestroy = EARTHQUAKE_MAX[L - 1];
     const emergencyCount = countSpecific(grid, b => b.id === 'emergency_center');
@@ -299,23 +300,23 @@ function applyDisaster(
     const costPer = Math.max(0, Math.round(EARTHQUAKE_COST[L - 1] * pct));
     m.money -= destCount * costPer;
     m.resilience = Math.max(0, m.resilience - Math.round(EQ_RES[L - 1] * pct));
-    m.happiness = Math.max(0, m.happiness - Math.round(EQ_HAP[L - 1] * pct));
+    m.happiness = Math.max(0, m.happiness - Math.round(EQ_HAP[L - 1] * pct * 10));
   } else if (type === 'drought') {
     const waterCount = countBuildings(grid, 'water');
     const waterDefense = Math.min(0.9, waterCount * 0.15);
     const popLoss = Math.max(0, Math.round(DROUGHT_POP[L - 1] * pct * (1 - waterDefense)));
-    const happLoss = Math.max(0, Math.round(DROUGHT_HAP[L - 1] * pct) - Math.min(waterCount, 5));
+    const happLoss = Math.max(0, Math.round(DROUGHT_HAP[L - 1] * pct * 10) - Math.min(waterCount, 5) * 10);
     const moneyLoss = Math.max(0, Math.round(DROUGHT_MONEY[L - 1] * pct));
     m.population = Math.max(0, m.population - popLoss);
     m.happiness = Math.max(0, m.happiness - happLoss);
     m.money -= moneyLoss;
-    if (L >= 5) m.happiness = Math.max(0, m.happiness - Math.round(15 * pct));
+    if (L >= 5) m.happiness = Math.max(0, m.happiness - Math.round(15 * pct * 10));
   } else if (type === 'smog') {
     const greenCount = countBuildings(grid, 'green');
     const greenDefense = Math.min(0.9, greenCount * 0.15);
     const polExtra = Math.max(0, Math.round(SMOG_POL[L - 1] * pct * (1 - greenDefense)));
     const popLoss = Math.max(0, Math.round(SMOG_POP[L - 1] * pct * (1 - greenDefense)));
-    const happLoss = Math.max(0, Math.round(SMOG_HAP[L - 1] * pct));
+    const happLoss = Math.max(0, Math.round(SMOG_HAP[L - 1] * pct * 10));
     m.pollution = Math.min(100, m.pollution + polExtra);
     m.population = Math.max(0, m.population - popLoss);
     m.happiness = Math.max(0, m.happiness - happLoss);
@@ -333,7 +334,7 @@ const OBJECTIVES: Objective[] = [
   { id: 'first_event', text: 'Organize your first event', check: (s) => s.eventsOrganized.length >= 1, requires: 'money_500' },
   { id: 'money_5k', text: 'Save up $5,000', check: (s) => s.money >= 5000, requires: 'first_event' },
   { id: 'renewable_built', text: 'Build a renewable energy building', check: (s) => s.grid.some(r => r.some(c => c && c.renewableBoost > 0)), requires: 'first_event' },
-  { id: 'happiness_60', text: 'Reach 60% happiness', check: (s) => s.happiness >= 60, requires: 'park_built' },
+  { id: 'happiness_60', text: 'Reach 60% happiness', check: (s) => s.happiness >= 600, requires: 'park_built' },
   { id: 'pop_5k', text: 'Reach 5,000 population', check: (s) => s.population >= 5000, requires: 'pop_200' },
   { id: 'survive_disaster', text: 'Survive a natural disaster', check: (s) => Object.values(s.disasterLevels).some(l => l >= 1), requires: 'money_500' },
   { id: 'money_50k', text: 'Amass $50,000', check: (s) => s.money >= 50000, requires: 'money_5k' },
@@ -390,7 +391,7 @@ export const useGameStore = create<GameState>((set) => ({
   grid: createEmptyGrid(GRID_SIZE),
   gridSize: GRID_SIZE,
   money: STARTING_MONEY,
-      population: 100, pollution: 0, happiness: 40, renewablePct: 0, resilience: 0,
+      population: 100, pollution: 0, happiness: 400, renewablePct: 0, resilience: 0,
   selectedBuilding: null, tickCount: 0, gameSpeed: 1,
   warnings: [], gameResult: null, tutorialComplete: false, hasWon: false, tutorialReplay: false, tutorialStep: 0,
   constructionMap: {}, terrainMap: generateTerrain(), terrainClearing: {},
@@ -399,6 +400,7 @@ export const useGameStore = create<GameState>((set) => ({
     disasterLevels: { tsunami: 0, earthquake: 0, drought: 0, smog: 0 },
   disasterMinigame: null, minigameScore: 0, minigamePlayed: false,
   minigameStats: null, damageReport: null, resilienceDecay: 0,
+  pollutionStreak: 0, overcrowdStreak: 0,
   meterOffsets: { pollution: 0, happiness: 0, renewablePct: 0, resilience: 0 },
   meterDeltas: {}, justCompleted: [], destroyedTiles: [],
   completedObjectives: [], seenAdvisories: [] as { id: string; message: string }[], repeatableAdvisories: [],
@@ -620,38 +622,46 @@ export const useGameStore = create<GameState>((set) => ({
       resilienceDecay = 0;
     }
 
-    // Overcrowding happiness penalty: -2 per 10% over housing capacity (capped at 15/day)
+    // Overcrowding gradual escalation: penalty grows with severity × streak
     const ecoC = countBuildings(active, 'economic');
     const greenC = countBuildings(active, 'green');
     const hCap = Math.floor((ecoC * 250 + greenC * 50) * activeBuffs.popCapMultiplier);
+    let overcrowdStreak = state.overcrowdStreak || 0;
     let overcrowdPenalty = 0;
     if (hCap > 0 && meters.population > hCap) {
+      overcrowdStreak++;
       const overPct = Math.floor((meters.population - hCap) / hCap * 10);
-      overcrowdPenalty = Math.min(15, overPct * 2);
+      overcrowdPenalty = Math.min(150, overPct * 2 * overcrowdStreak);
+    } else {
+      overcrowdStreak = 0;
     }
 
-    // Pollution happiness penalty: when pollution > 50, excess × 1.0 (capped at 15/day)
+    // Pollution gradual escalation: penalty grows with pollution × streak
+    let pollutionStreak = state.pollutionStreak || 0;
     let pollutionHapPenalty = 0;
     if (meters.pollution > 50) {
-      pollutionHapPenalty = Math.min(15, (meters.pollution - 50) * 1.0);
+      pollutionStreak++;
+      pollutionHapPenalty = Math.min(150, Math.round(meters.pollution * pollutionStreak / 10));
+    } else {
+      pollutionStreak = 0;
     }
 
-    // Persistent happiness: start from stored value, add building rates, subtract penalties
+    // Persistent happiness at ×10 scale (integer arithmetic)
     const happyDelta = sumBuildingStat(active, 'happinessBoost');
     let newHappiness = state.happiness + happyDelta - overcrowdPenalty - pollutionHapPenalty;
     // Apply disaster one-off deduction if present
     if (extraMeters.happiness !== undefined && extraMeters.happiness < state.happiness) {
       newHappiness -= (state.happiness - extraMeters.happiness);
     }
-    newHappiness = Math.max(0, Math.min(100, newHappiness));
-    meters.happiness = Math.round(newHappiness);
+    newHappiness = Math.max(0, Math.min(1000, newHappiness));
+    meters.happiness = newHappiness;
 
     // Apply persistent manual meter offsets (for pollution, renewable, resilience)
     meters.pollution = Math.max(0, Math.min(100, meters.pollution + (state.meterOffsets?.pollution || 0)));
     meters.renewablePct = Math.max(0, Math.min(100, meters.renewablePct + (state.meterOffsets?.renewablePct || 0)));
     meters.resilience = Math.max(0, Math.min(100, meters.resilience + (state.meterOffsets?.resilience || 0)));
-    // Happiness dev offset (separate from formula)
-    meters.happiness = Math.max(0, Math.min(100, meters.happiness + (state.meterOffsets?.happiness || 0)));
+    // Happiness dev offset (at ×10 scale)
+    meters.happiness = Math.max(0, Math.min(1000, meters.happiness + (state.meterOffsets?.happiness ?? 0)));
 
     const warnings = checkWarnings(meters, state.warnings);
     const gameOver = checkGameOver(warnings);
@@ -700,6 +710,7 @@ export const useGameStore = create<GameState>((set) => ({
       disasterLevels, destroyedTiles,
       damageReport, minigameStats,
       resilienceDecay, minigamePlayed,
+      pollutionStreak, overcrowdStreak,
       completedObjectives, seenAdvisories,
       repeatableAdvisories,
       eventsOrganized, eventTimers: newEventTimers, activeBuffs,
@@ -785,7 +796,7 @@ export const useGameStore = create<GameState>((set) => ({
   adjustMeter: (meter, amount) =>
     set((state) => {
       const current = state[meter] as number;
-      const clamped = Math.max(0, Math.min(meter === 'money' ? 99999999 : meter === 'population' ? 9999999 : 100, current + amount));
+      const clamped = Math.max(0, Math.min(meter === 'money' ? 99999999 : meter === 'population' ? 9999999 : meter === 'happiness' ? 1000 : 100, current + amount));
       // For formula-computed meters, store the offset so it persists across ticks
       if (meter === 'pollution' || meter === 'happiness' || meter === 'renewablePct' || meter === 'resilience') {
         const offsets = { ...state.meterOffsets, [meter]: (state.meterOffsets[meter] || 0) + amount };
@@ -899,7 +910,7 @@ export const useGameStore = create<GameState>((set) => ({
 
   resetGame: () => set({
     grid: createEmptyGrid(GRID_SIZE), money: STARTING_MONEY,
-  population: 100, pollution: 0, happiness: 40, renewablePct: 0, resilience: 0,
+  population: 100, pollution: 0, happiness: 400, renewablePct: 0, resilience: 0,
     selectedBuilding: null, tickCount: 0, gameSpeed: 0,
   warnings: [], gameResult: null, tutorialComplete: false, hasWon: false, tutorialReplay: false, tutorialStep: 0,
   constructionMap: {}, terrainMap: generateTerrain(), terrainClearing: {},
@@ -910,6 +921,7 @@ export const useGameStore = create<GameState>((set) => ({
   minigameStats: null,
   damageReport: null,
     resilienceDecay: 0,
+    pollutionStreak: 0, overcrowdStreak: 0,
     meterOffsets: { pollution: 0, happiness: 0, renewablePct: 0, resilience: 0 },
     meterDeltas: {}, justCompleted: [], destroyedTiles: [],
   completedObjectives: [], seenAdvisories: [] as { id: string; message: string }[], repeatableAdvisories: [],

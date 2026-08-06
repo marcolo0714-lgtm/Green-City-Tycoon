@@ -21,7 +21,7 @@ Events are one-time purchases that provide **permanent compounding multipliers**
 | 4 | Solar City Initiative ☀️ | $20K | 4 | 1,500 | **Ren≥20%** | Inc ×2.5, Ren ×2.0, Cap ×2.0, Grow ×2.5 |
 | 5 | Water Security Initiative 🚰 | $50K | 4 | 5K | **Hap≥65%** | Inc ×2.5, Poll ×0.5, Cap ×2.5, Grow ×3.0 |
 | 6 | Green Architecture Expo 🏛️ | $120K | 5 | 15K | **Res≥25%** | Inc ×2.5, Cap ×3.0, Grow ×3.0 |
-| 7 | Water Renaissance 💧 | $300K | 5 | 50K | **Ren≥40%** | Inc ×3.0, Res ×2.0, Cap ×3.0, Grow ×3.5 |
+| 7 | Water Renaissance 💧 | $300K | 5 | 50K | **Ren≥40%** | Inc ×3.0, Res ×2.0, Ren ×1.7, Grow ×3.0 |
 | 8 | Climate Innovation District 🔬 | $800K | 6 | 150K | **Res≥35%** | Inc ×3.0, Ren ×2.5, Poll ×0.4, Cap ×3.5 |
 | 9 | Smart Resilient City 🏙️ | $2M | 7 | 500K | **Res≥30%** | Inc ×3.5, Cap ×4.0, Grow ×4.0 |
 | 10 | World Sustainability Summit 🕊️ | $5M | 8 | 2M | **Hap≥70%** | Inc ×4.0, Res ×2.0, Ren ×2.0, Poll ×0.4, Cap ×5.0, Grow ×5.0 |
@@ -36,8 +36,8 @@ All multipliers stack **multiplicatively** (cumulative). Events have **no prereq
 | 2 | ×4.0 | ×0.5 | ×1.5 | ×2.25 | ×2.0 |
 | 4 | ×20 | ×0.5 | ×2.25 | ×9.0 | ×12.5 |
 | 6 | ×125 | ×0.25 | ×2.25 | ×67.5 | ×112.5 |
-| 8 | ×1,125 | ×0.1 | ×2.25 | ×709 | ×112.5 |
-| 10 | ×18,000 | **×0.04** | ×9.0 | ×17,719 | ×562.5 |
+| 8 | ×1,125 | ×0.1 | ×2.25 | ×236 | ×337.5 |
+| 10 | ×18,000 | **×0.04** | ×9.0 | ×5,906 | ×1,687.5 |
 
 ### Progression Example
 
@@ -77,10 +77,10 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 Rainwa
 
 | Building | Cost | Inc | Poll | Hap | Res | Ren | Category |
 |---|---|---|---|---|---|---|---|
-| House | $20 | +10 | +10 | +0.1 | — | — | Economic |
+| House | $20 | +10 | +10 | +1 | — | — | Economic |
 | Shop | $45 | +22 | +15 | — | — | — | Economic |
-| Park | $18 | 0 | -4 | +0.3 | — | — | Green |
-| Green Roof | $40 | 0 | -2 | +0.1 | +3 | — | Green |
+| Park | $18 | 0 | -4 | +3 | — | — | Green |
+| Green Roof | $40 | 0 | -2 | +1 | +3 | — | Green |
 | Water Purifier | $60 | 0 | -5 | — | +2 | — | Water |
 | Rainwater Harvester | $55 | +6 | -1 | — | +1 | — | Water |
 
@@ -97,18 +97,18 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 Rainwa
 | Geothermal Plant | $450 | +26 | -5 | — | +2 | +8 | Energy | #4 |
 | Office Tower | $350 | +35 | +5 | — | — | — | Economic | #4 |
 | Aquifer Recharge | $320 | +10 | -3 | — | +3 | — | Water | #5 |
-| Wetland Restoration | $580 | +15 | -7 | +0.2 | +1 | — | Water | #5 |
-| Vertical Farm | $450 | +16 | -4 | +0.4 | — | — | Green | #6 |
-| Vertical Forest | $800 | +24 | -9 | +0.6 | — | — | Green | #6 |
-| Desalination | $650 | +20 | -4 | +0.2 | +4 | — | Water | #7 |
+| Wetland Restoration | $580 | +15 | -7 | +2 | +1 | — | Water | #5 |
+| Vertical Farm | $450 | +16 | -4 | +4 | — | — | Green | #6 |
+| Vertical Forest | $800 | +24 | -9 | +6 | — | — | Green | #6 |
+| Desalination | $650 | +20 | -4 | +2 | +4 | — | Water | #7 |
 | Wave Converter | $550 | +18 | -2 | — | +2 | +5 | Energy | #7 |
 | Research Lab | $1000 | +24 | -4 | — | +5 | +4 | Science | #8 |
-| Observatory | $800 | 0 | -2 | +0.3 | +7 | — | Science | #8 |
+| Observatory | $800 | 0 | -2 | +3 | +7 | — | Science | #8 |
 | Emergency Center | $1400 | 0 | 0 | — | +16 | — | Science | #8 |
-| Factory | $1800 | +50 | +15 | -0.2 | — | — | Economic | #9 |
+| Factory | $1800 | +50 | +15 | -2 | — | — | Economic | #9 |
 | Smart Grid Center | $3500 | +55 | -5 | — | +7 | +7 | Energy | #9 |
-| Global Trade Hub | $6000 | +110 | 0 | +0.5 | +4 | — | Economic | #9 |
-| World Peace Garden | $12000 | 0 | -14 | +1.4 | — | — | Green | #10 |
+| Global Trade Hub | $6000 | +110 | 0 | +5 | +4 | — | Economic | #9 |
+| World Peace Garden | $12000 | 0 | -14 | +14 | — | — | Green | #10 |
 
 ---
 
@@ -143,14 +143,15 @@ pollution = clamp(0, 100, scaledPollution)
 
 ### Happiness
 ```
-base = 40 (starting value)
-perTick += sum of all completed buildings' happinessBoost (per-day rates)
-perTick -= min(15, overcrowdPct × 2)           // -2 per 10% over cap, max 15/day
-perTick -= min(15, (pollution - 50) × 1.0)      // if pollution > 50, max 15/day
-disaster -= one-off deduction from applyDisaster
-clamp(0, 100)
+base = 400 (starting value, ×10 scale)
+perTick += sum of all completed buildings' happinessBoost (integer values at ×10)
+perTick -= min(150, overcrowdPct × 20)          // -2 per 10% over cap, max 15%/day
+perTick -= min(150, (pollution - 50) × 10)       // if pollution > 50, max 15%/day
+disaster -= one-off deduction from applyDisaster (at ×10 scale)
+clamp(0, 1000)
+display = floor(internal / 10)
 ```
-Happiness is a **persistent accumulator** — not recomputed from scratch each tick. Buildings add small per-day rates (e.g. Park +0.10/day, House +0.03/day). Penalties are capped at 15% per source per day. Happiness is **not** affected by event multipliers. Used as a punishment lever for overcrowding and pollution, and disasters cause lasting happiness drops.
+Happiness is stored internally at **×10 integer scale** (0-1000) for exact accumulation. Buildings add integer amounts (e.g. Park +3 = +0.3%/day displayed). Penalties are capped at 150 internal (15% displayed). Displayed happiness = floor(internal / 10). Not affected by event multipliers.
 
 ### Renewable Energy %
 ```
