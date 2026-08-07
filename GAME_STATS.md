@@ -232,7 +232,7 @@ Disaster level is **derived from events organized**:
 Random: **30% chance per day** (no active warning/disaster). Warning phase lasts 2–5 days (base 2, +1 per science building). Active phase lasts 3 days.
 
 ### Minigame Damage Reduction
-Score M (0-4) reduces all damage by `(10 + 15 × M)%` — 10% if skipped, up to 70% at M=4: `pct = 0.9 − 0.15 × M`.
+Skipping the quiz gives **0% reduction** (100% damage taken). Playing the quiz gives: `pct = 0.9 − score × 0.15`. Score M (0-4): 0 correct = 10% reduction, 4 correct (perfect) = 70% reduction.
 
 ### 🌊 Tsunami
 
@@ -280,7 +280,7 @@ Defense: each water building reduces population loss by 5% (max 50%). Water buil
 | 4 | +75 | 100 | -40 |
 | 5 | +95 | 500 | -60 |
 
-Defense: each green building reduces pollution and population loss by 5% (max 50%). Values before minigame reduction.
+Defense: each green building reduces pollution and population loss by 5% (max 50%). Smog pollution is temporary and recovers over 5 days after the disaster ends. Values before minigame reduction.
 
 ---
 

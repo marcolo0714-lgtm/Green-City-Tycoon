@@ -229,13 +229,15 @@ function applyDisaster(
   type: DisasterType,
   level: number,
   minigameScore: number,
-): { grid: Grid; meters: GameMeters; destroyed: string[] } {
+  minigamePlayed: boolean,
+): { grid: Grid; meters: GameMeters; destroyed: string[]; smogPolDelta: number } {
   const grid = state.grid.map(r => [...r]);
   let m = { ...state.meters };
   const destroyed: string[] = [];
   const L = level;
   const M = minigameScore;
-  const pct = 0.9 - M * 0.15; // M=0 → 10% reduction, M=4 → 70% reduction
+  const pct = minigamePlayed ? 0.9 - M * 0.15 : 1.0; // skipped = 0% reduction, played with 0 = 10%
+  let smogPolDelta: number | undefined;
 
   const TSUNAMI_COST = [500, 3000, 15000, 60000, 200000];
   const EARTHQUAKE_COST = [300, 2000, 8000, 30000, 100000];
@@ -347,8 +349,9 @@ function applyDisaster(
     m.pollution = Math.min(100, m.pollution + polExtra);
     m.population = Math.max(0, m.population - popLoss);
     m.happiness = Math.max(0, m.happiness - happLoss);
+    smogPolDelta = polExtra;
   }
-  return { grid, meters: m, destroyed };
+  return { grid, meters: m, destroyed, smogPolDelta: smogPolDelta ?? 0 };
 }
 
 // ---- objectives ----
@@ -423,7 +426,7 @@ export const useGameStore = create<GameState>()(
     disasterLevels: { tsunami: 0, earthquake: 0, drought: 0, smog: 0 },
   disasterMinigame: null, minigameScore: 0, minigamePlayed: false,
   minigameStats: null, damageReport: null, resilienceDecay: 0,
-  pollutionStreak: 0, overcrowdStreak: 0,
+  pollutionStreak: 0, overcrowdStreak: 0, smogPollutionDelta: 0,
   meterOffsets: { pollution: 0, happiness: 0, renewablePct: 0, resilience: 0 },
   meterDeltas: {}, justCompleted: [], destroyedTiles: [],
   completedObjectives: [], seenAdvisories: [] as { id: string; message: string }[], repeatableAdvisories: [],
@@ -581,6 +584,7 @@ export const useGameStore = create<GameState>()(
     // Disaster logic
     let disasterWarning = state.disasterWarning;
     let disasterActive = state.disasterActive;
+    let smogPollutionDelta = state.smogPollutionDelta || 0;
     let disasterLevels = { ...state.disasterLevels };
     const currentDisasterLevel = deriveDisasterLevel(eventsOrganized.length);
     let minigamePlayed = state.minigamePlayed;
@@ -612,10 +616,13 @@ export const useGameStore = create<GameState>()(
       if (remaining <= 0) {
         const dw = disasterWarning!;
         const lvl = dw.isDev && dw.devLevel ? dw.devLevel : currentDisasterLevel;
-        const result = applyDisaster({ grid: gridAfterDisaster, meters: state }, dw.type, lvl, state.minigameScore);
+        const result = applyDisaster({ grid: gridAfterDisaster, meters: state }, dw.type, lvl, state.minigameScore, state.minigamePlayed);
         gridAfterDisaster = result.grid;
         extraMeters = result.meters;
         destroyedTiles = result.destroyed;
+        if (dw.type === 'smog' && result.smogPolDelta > 0) {
+          smogPollutionDelta = result.smogPolDelta;
+        }
         if (!dw.isDev) disasterLevels[dw.type] = Math.max(disasterLevels[dw.type], currentDisasterLevel);
         disasterWarning = null;
         disasterActive = { type: dw.type, daysLeft: 3 };
@@ -648,6 +655,14 @@ export const useGameStore = create<GameState>()(
     if (resilienceDecay >= 3) {
       meters.resilience = Math.max(0, meters.resilience - 1);
       resilienceDecay = 0;
+    }
+
+    // Smog pollution: add remaining delta to meters, then recover over 5 days
+    if (smogPollutionDelta > 0) {
+      meters.pollution = Math.min(100, meters.pollution + smogPollutionDelta);
+      const recovery = Math.min(smogPollutionDelta, Math.ceil(smogPollutionDelta / 5));
+      smogPollutionDelta -= recovery;
+      if (smogPollutionDelta <= 0) smogPollutionDelta = 0;
     }
 
     // Overcrowding gradual escalation: penalty grows with severity × streak
@@ -766,7 +781,7 @@ export const useGameStore = create<GameState>()(
       disasterLevels, destroyedTiles,
       damageReport, minigameStats,
       resilienceDecay, minigamePlayed,
-      pollutionStreak, overcrowdStreak,
+      pollutionStreak, overcrowdStreak, smogPollutionDelta,
       completedObjectives, seenAdvisories: [...state.seenAdvisories, ...adjHints.map(m => ({ id: `adj_${Date.now()}_${m.length}`, message: m }))],
       repeatableAdvisories,
       eventsOrganized, eventTimers: newEventTimers, activeBuffs,
@@ -979,7 +994,7 @@ export const useGameStore = create<GameState>()(
   minigameStats: null,
   damageReport: null,
     resilienceDecay: 0,
-    pollutionStreak: 0, overcrowdStreak: 0,
+    pollutionStreak: 0, overcrowdStreak: 0, smogPollutionDelta: 0,
     meterOffsets: { pollution: 0, happiness: 0, renewablePct: 0, resilience: 0 },
     meterDeltas: {}, justCompleted: [], destroyedTiles: [],
   completedObjectives: [], seenAdvisories: [] as { id: string; message: string }[], repeatableAdvisories: [],

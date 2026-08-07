@@ -143,6 +143,7 @@ export interface GameState extends GameMeters {
   resilienceDecay: number;
   pollutionStreak: number;
   overcrowdStreak: number;
+  smogPollutionDelta: number;
   meterOffsets: { pollution: number; happiness: number; renewablePct: number; resilience: number };
   meterDeltas: MeterDeltas; justCompleted: string[];
   destroyedTiles: string[];
