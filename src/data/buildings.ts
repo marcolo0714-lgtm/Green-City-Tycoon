@@ -22,16 +22,12 @@ export const BUILDINGS: Building[] = [
   // === EVENT 2: Clean Energy Kickstart ===
   { id: 'wind_turbine', name: 'Wind Turbine', shortName: 'Turbine', emoji: '🌬️', cost: 220, category: 'energy',
     income: 20, pollution: -4, happinessBoost: 0, resilienceBoost: 0, renewableBoost: 3, height: 2, shape: 'turbine', unlockEvent: 'event_2' },
-  { id: 'recycling', name: 'Recycling Center', shortName: 'Recycle', emoji: '♻️', cost: 100, category: 'waste',
-    income: 16, pollution: -6, happinessBoost: 0, resilienceBoost: 0, renewableBoost: 0, height: 1, shape: 'chimney', unlockEvent: 'event_2' },
-  { id: 'composting', name: 'Composting Hub', shortName: 'Compost', emoji: '🪱', cost: 70, category: 'waste',
-    income: 8, pollution: -3, happinessBoost: 0, resilienceBoost: 0, renewableBoost: 1, height: 1, shape: 'block', unlockEvent: 'event_2' },
 
   // === EVENT 3: Coastal Shield Program ===
   { id: 'seawall', name: 'Seawall', shortName: 'Seawall', emoji: '🧱', cost: 500, category: 'coastal',
-    income: 0, pollution: 0, happinessBoost: 0, resilienceBoost: 12, renewableBoost: 0, height: 1, shape: 'wall', coastalOnly: true, unlockEvent: 'event_3' },
+    income: 0, pollution: 0, happinessBoost: 0, resilienceBoost: 5, renewableBoost: 0, height: 1, shape: 'wall', coastalOnly: true, unlockEvent: 'event_3' },
   { id: 'wave_absorber', name: 'Wave Absorber', shortName: 'Absorber', emoji: '🛡️', cost: 700, category: 'coastal',
-    income: 0, pollution: 0, happinessBoost: 0, resilienceBoost: 18, renewableBoost: 0, height: 1, shape: 'sloped', coastalOnly: true, unlockEvent: 'event_3' },
+    income: 0, pollution: 0, happinessBoost: 0, resilienceBoost: 5, renewableBoost: 0, height: 1, shape: 'sloped', coastalOnly: true, unlockEvent: 'event_3' },
 
   // === EVENT 4: Solar City Initiative ===
   { id: 'geothermal', name: 'Geothermal Plant', shortName: 'Geotherm', emoji: '🌋', cost: 450, category: 'energy',
@@ -61,15 +57,15 @@ export const BUILDINGS: Building[] = [
   { id: 'research_lab', name: 'Research Lab', shortName: 'R. Lab', emoji: '🔬', cost: 1000, category: 'science',
     income: 24, pollution: -4, happinessBoost: 0, resilienceBoost: 5, renewableBoost: 2, height: 2, shape: 'lab', unlockEvent: 'event_8' },
   { id: 'observatory', name: 'Observatory', shortName: 'Observ.', emoji: '🔭', cost: 800, category: 'science',
-    income: 0, pollution: -2, happinessBoost: 5, resilienceBoost: 7, renewableBoost: 0, height: 2, shape: 'observatory', unlockEvent: 'event_8' },
+    income: 0, pollution: -2, happinessBoost: 5, resilienceBoost: 5, renewableBoost: 0, height: 2, shape: 'observatory', unlockEvent: 'event_8' },
   { id: 'emergency_center', name: 'Emergency Center', shortName: 'Emerg.', emoji: '🚨', cost: 1400, category: 'science',
-    income: 0, pollution: 0, happinessBoost: 0, resilienceBoost: 16, renewableBoost: 0, height: 1, shape: 'block', unlockEvent: 'event_8' },
+    income: 0, pollution: 0, happinessBoost: 0, resilienceBoost: 5, renewableBoost: 0, height: 1, shape: 'block', unlockEvent: 'event_8' },
 
   // === EVENT 9: Smart Resilient City ===
   { id: 'factory', name: 'Factory', shortName: 'Factory', emoji: '🏭', cost: 1800, category: 'economic',
     income: 50, pollution: 15, happinessBoost: -3, resilienceBoost: 0, renewableBoost: 0, height: 1, shape: 'factory', unlockEvent: 'event_9' },
   { id: 'smart_grid', name: 'Smart Grid Center', shortName: 'S. Grid', emoji: '🔋', cost: 3500, category: 'energy',
-    income: 55, pollution: -5, happinessBoost: 0, resilienceBoost: 7, renewableBoost: 5, height: 2, shape: 'grid_center', unlockEvent: 'event_9' },
+    income: 55, pollution: -5, happinessBoost: 0, resilienceBoost: 5, renewableBoost: 5, height: 2, shape: 'grid_center', unlockEvent: 'event_9' },
   { id: 'global_trade', name: 'Global Trade Hub', shortName: 'Trade Hub', emoji: '🌐', cost: 6000, category: 'economic',
     income: 110, pollution: 0, happinessBoost: 8, resilienceBoost: 4, renewableBoost: 0, height: 2, shape: 'trade_center', unlockEvent: 'event_9' },
 
@@ -80,10 +76,10 @@ export const BUILDINGS: Building[] = [
 
 export const CATEGORY_COLORS: Record<string, string> = {
   economic: '#f59e0b', water: '#3b82f6', energy: '#06b6d4', coastal: '#0ea5e9',
-  green: '#22c55e', science: '#8b5cf6', waste: '#78716c',
+  green: '#22c55e', science: '#8b5cf6',
 };
 
 export const CATEGORY_LABELS: Record<string, string> = {
   economic: 'Economic', water: 'Water', energy: 'Energy', coastal: 'Coastal',
-  green: 'Green', science: 'Science', waste: 'Waste',
+  green: 'Green', science: 'Science',
 };

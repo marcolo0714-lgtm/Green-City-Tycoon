@@ -150,14 +150,18 @@ export default function NotificationOverlay() {
         <div className="minigame-prepare-container">
           <div className="minigame-stats-box">
             <div className="mstats-title">🏚️ Disaster Impact</div>
-            <div className="mstats-row">
-              <span className="mstats-label">Buildings Lost</span>
-              <span className="mstats-value">{damageReport.destroyed}</span>
-            </div>
-            <div className="mstats-row">
-              <span className="mstats-label">Money Lost</span>
-              <span className="mstats-value">${damageReport.money}</span>
-            </div>
+            {damageReport.destroyed > 0 && (
+              <div className="mstats-row">
+                <span className="mstats-label">Buildings Lost</span>
+                <span className="mstats-value">{damageReport.destroyed}</span>
+              </div>
+            )}
+            {damageReport.money > 0 && (
+              <div className="mstats-row">
+                <span className="mstats-label">Money Lost</span>
+                <span className="mstats-value">${damageReport.money}</span>
+              </div>
+            )}
             {damageReport.population > 0 && (
               <div className="mstats-row">
                 <span className="mstats-label">Population Lost</span>
@@ -216,28 +220,57 @@ export default function NotificationOverlay() {
             <h2>💀 City Collapsed</h2>
             {(() => {
               const fatal = warnings.find(w => w.countdown <= 0);
+              const moneyHints = [
+                '💡 Build Houses and Shops early to generate steady income. Organize events to multiply your earnings.',
+                '💡 Avoid buying expensive buildings you cannot sustain. Focus on income-generating buildings first.',
+                '💡 Organize events in order — each completed event stacks income multipliers multiplicatively.',
+                '💡 Clear cheap terrain (forests: $2K) early to make room for more income buildings.',
+                '💡 Check the Events tab — events with low requirements can be organized earliest for big income boosts.',
+              ];
+              const popHints = [
+                '💡 Build Houses and Shops to provide housing — population cannot grow without room to live.',
+                '💡 Keep happiness above 30% for population growth. Parks and Green Roofs raise happiness daily.',
+                '💡 Organize events to multiply your population growth and housing capacity.',
+                '💡 If population is declining fast, pause construction and focus on housing buildings immediately.',
+                '💡 Green Roofs contribute to both housing capacity and happiness — great early-game value.',
+              ];
+              const pollutionHints = [
+                '💡 Build Parks, Green Roofs, and Solar Panels to reduce pollution. Organize events to slash pollution multipliers.',
+                '💡 Green buildings reduce pollution impact during smog disasters. Keep at least 2-3 Parks or Green Roofs.',
+                '💡 Watch the Air Quality meter — when it drops below 50%, prioritize clean buildings over income.',
+                '💡 Avoid clustering Factories and Shops. Spread polluting buildings across the grid with clean buildings in between.',
+                '💡 The Clean Energy Kickstart event (Event 2) halves all pollution — organize it early.',
+              ];
+              const happinessHints = [
+                '💡 Add Parks (0.5% per day) and Green Roofs (0.2%) to steadily build happiness over time.',
+                '💡 Avoid overcrowding — if population exceeds housing capacity, happiness drops faster each day.',
+                '💡 Keep pollution below 50% — prolonged pollution causes escalating happiness penalties.',
+                '💡 Check building adjacency synergies — placing a Park next to a House gives +0.2% happiness per day.',
+                '💡 Disaster damage to happiness is permanent. Complete the minigame quiz with a perfect score to reduce happiness loss by 70%.',
+              ];
+              const pick = (hints: string[]) => hints[Math.floor(Math.random() * hints.length)];
               if (fatal?.type === 'money') return (
                 <>
                   <p>Your treasury ran dry and the city went bankrupt.</p>
-                  <p className="game-overlay-hint">💡 Build more Houses and Shops early to generate steady income. Organize events to multiply your earnings.</p>
+                  <p className="game-overlay-hint">{pick(moneyHints)}</p>
                 </>
               );
               if (fatal?.type === 'population') return (
                 <>
                   <p>Citizens abandoned the city — too few people remained to sustain it.</p>
-                  <p className="game-overlay-hint">💡 Build Houses and economic buildings to provide housing. Keep happiness above 30% for population growth.</p>
+                  <p className="game-overlay-hint">{pick(popHints)}</p>
                 </>
               );
               if (fatal?.type === 'pollution') return (
                 <>
                   <p>Choking pollution made the city uninhabitable.</p>
-                  <p className="game-overlay-hint">💡 Build Parks, Green Roofs, and Solar Panels. Organize events to slash pollution multipliers. Keep Air Quality above 20%.</p>
+                  <p className="game-overlay-hint">{pick(pollutionHints)}</p>
                 </>
               );
               if (fatal?.type === 'happiness') return (
                 <>
                   <p>Citizens rioted — happiness plummeted beyond recovery.</p>
-                  <p className="game-overlay-hint">💡 Add Parks and Green Roofs for happiness. Reduce pollution and avoid overcrowding. Events multiply happiness from buildings.</p>
+                  <p className="game-overlay-hint">{pick(happinessHints)}</p>
                 </>
               );
               return <p>The problems became too severe to handle.</p>;

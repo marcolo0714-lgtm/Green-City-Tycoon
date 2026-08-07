@@ -1,4 +1,4 @@
-export type Category = 'economic' | 'water' | 'energy' | 'coastal' | 'green' | 'science' | 'waste';
+export type Category = 'economic' | 'water' | 'energy' | 'coastal' | 'green' | 'science';
 
 export type Shape = 'house' | 'shop' | 'tower' | 'factory' | 'park' | 'green_roof' | 'stepped'
   | 'cylinder' | 'turbine' | 'solar' | 'block' | 'wall' | 'sloped' | 'observatory'

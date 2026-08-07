@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { Building, GameMeters, GameState, Grid, Warning, TerrainType, TerrainTile, DisasterType, MinigameState, ActiveBuffs } from '../types';
 import { DEFAULT_BUFFS } from '../types';
 import { BUILDINGS } from '../data/buildings';
@@ -234,7 +235,7 @@ function applyDisaster(
   const destroyed: string[] = [];
   const L = level;
   const M = minigameScore;
-  const pct = 1 - M * 0.175; // M=0 → 100%, M=4 → 30% damage
+  const pct = 0.9 - M * 0.15; // M=0 → 10% reduction, M=4 → 70% reduction
 
   const TSUNAMI_COST = [500, 3000, 15000, 60000, 200000];
   const EARTHQUAKE_COST = [300, 2000, 8000, 30000, 100000];
@@ -254,21 +255,47 @@ function applyDisaster(
     let destCount = 0;
     const range = L <= 2 ? 1 : L <= 4 ? 2 : 3;
     const costPer = Math.max(0, Math.round(TSUNAMI_COST[L - 1] * pct));
+    // Collect all seawall/wave_absorber positions and their edge-facing protection zones
+    const seaWalls: Array<{ r: number; c: number; edge: 'N' | 'S' | 'W' | 'E' }> = [];
+    for (let ri = 0; ri < GRID_SIZE; ri++) {
+      for (let ci = 0; ci < GRID_SIZE; ci++) {
+        const b = grid[ri][ci];
+        if (b && (b.id === 'seawall' || b.id === 'wave_absorber')) {
+          if (ri === 0) seaWalls.push({ r: ri, c: ci, edge: 'N' });
+          else if (ri === GRID_SIZE - 1) seaWalls.push({ r: ri, c: ci, edge: 'S' });
+          else if (ci === 0) seaWalls.push({ r: ri, c: ci, edge: 'W' });
+          else if (ci === GRID_SIZE - 1) seaWalls.push({ r: ri, c: ci, edge: 'E' });
+        }
+      }
+    }
     for (let ri = 0; ri < GRID_SIZE; ri++) {
       for (let ci = 0; ci < GRID_SIZE; ci++) {
         const dist = Math.min(ri, ci, GRID_SIZE - 1 - ri, GRID_SIZE - 1 - ci);
         if (dist < range && grid[ri][ci]) {
-          let protected_ = false;
-          if (L < 5) {
-            for (let dr = -1; dr <= 1 && !protected_; dr++) {
-              for (let dc = -1; dc <= 1 && !protected_; dc++) {
-                const nr = ri + dr, nc = ci + dc;
-                if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE) {
-                  const b = grid[nr][nc];
-                  if (b && (b.id === 'seawall' || b.id === 'wave_absorber')) protected_ = true;
-                }
+          const b = grid[ri][ci];
+          if (!b) continue;
+          // Seawall and Wave Absorber are never destroyed by tsunami
+          if (b.id === 'seawall' || b.id === 'wave_absorber') continue;
+          // Check if any seawall/wave_absorber protects this building from ALL threatening edges
+          const threatenedEdges: Array<'N' | 'S' | 'W' | 'E'> = [];
+          if (ri < range) threatenedEdges.push('N');
+          if (GRID_SIZE - 1 - ri < range) threatenedEdges.push('S');
+          if (ci < range) threatenedEdges.push('W');
+          if (GRID_SIZE - 1 - ci < range) threatenedEdges.push('E');
+          let protected_ = true;
+          for (const edge of threatenedEdges) {
+            let edgeProtected = false;
+            for (const sw of seaWalls) {
+              if (sw.edge !== edge) continue;
+              const alongCoast = edge === 'N' || edge === 'S' ? ci : ri;
+              const inwardDist = edge === 'N' ? ri : edge === 'S' ? (GRID_SIZE - 1 - ri) : edge === 'W' ? ci : (GRID_SIZE - 1 - ci);
+              const wallAlong = edge === 'N' || edge === 'S' ? sw.c : sw.r;
+              if (Math.abs(alongCoast - wallAlong) <= 1 && inwardDist < 3) {
+                edgeProtected = true;
+                break;
               }
             }
+            if (!edgeProtected) { protected_ = false; break; }
           }
           if (!protected_) {
             destroyed.push(`${ri},${ci}`);
@@ -303,7 +330,7 @@ function applyDisaster(
     m.happiness = Math.max(0, m.happiness - Math.round(EQ_HAP[L - 1] * pct * 10));
   } else if (type === 'drought') {
     const waterCount = countBuildings(grid, 'water');
-    const waterDefense = Math.min(0.9, waterCount * 0.15);
+    const waterDefense = Math.min(0.5, waterCount * 0.05);
     const popLoss = Math.max(0, Math.round(DROUGHT_POP[L - 1] * pct * (1 - waterDefense)));
     const happLoss = Math.max(0, Math.round(DROUGHT_HAP[L - 1] * pct * 10) - Math.min(waterCount, 5) * 10);
     const moneyLoss = Math.max(0, Math.round(DROUGHT_MONEY[L - 1] * pct));
@@ -313,7 +340,7 @@ function applyDisaster(
     if (L >= 5) m.happiness = Math.max(0, m.happiness - Math.round(15 * pct * 10));
   } else if (type === 'smog') {
     const greenCount = countBuildings(grid, 'green');
-    const greenDefense = Math.min(0.9, greenCount * 0.15);
+    const greenDefense = Math.min(0.5, greenCount * 0.05);
     const polExtra = Math.max(0, Math.round(SMOG_POL[L - 1] * pct * (1 - greenDefense)));
     const popLoss = Math.max(0, Math.round(SMOG_POP[L - 1] * pct * (1 - greenDefense)));
     const happLoss = Math.max(0, Math.round(SMOG_HAP[L - 1] * pct * 10));
@@ -330,22 +357,26 @@ const OBJECTIVES: Objective[] = [
   { id: 'first_build', text: 'Place your first building', check: (s) => s.grid.some(r => r.some(c => c !== null)) },
   { id: 'money_500', text: 'Earn $500', check: (s) => s.money >= 500, requires: 'first_build' },
   { id: 'pop_200', text: 'Reach 200 population', check: (s) => s.population >= 200, requires: 'first_build' },
-  { id: 'park_built', text: 'Build a Park or Green Roof', check: (s) => s.grid.some(r => r.some(c => c && (c.id === 'park' || c.id === 'green_roof'))), requires: 'pop_200' },
   { id: 'first_event', text: 'Organize your first event', check: (s) => s.eventsOrganized.length >= 1, requires: 'money_500' },
   { id: 'money_5k', text: 'Save up $5,000', check: (s) => s.money >= 5000, requires: 'first_event' },
   { id: 'renewable_built', text: 'Build a renewable energy building', check: (s) => s.grid.some(r => r.some(c => c && c.renewableBoost > 0)), requires: 'first_event' },
-  { id: 'happiness_60', text: 'Reach 60% happiness', check: (s) => s.happiness >= 600, requires: 'park_built' },
+  { id: 'happiness_60', text: 'Reach 60% happiness', check: (s) => s.happiness >= 600, requires: 'first_build' },
   { id: 'pop_5k', text: 'Reach 5,000 population', check: (s) => s.population >= 5000, requires: 'pop_200' },
-  { id: 'survive_disaster', text: 'Survive a natural disaster', check: (s) => Object.values(s.disasterLevels).some(l => l >= 1), requires: 'money_500' },
+  { id: 'survive_disaster', text: 'Survive a natural disaster', check: (s) => Object.values(s.disasterLevels).some(l => l >= 1), requires: 'pop_200' },
+  { id: 'perfect_minigame', text: 'Get a perfect score in the disaster defense minigame', check: (s) => s.minigameScore >= 4, requires: 'survive_disaster' },
   { id: 'money_50k', text: 'Amass $50,000', check: (s) => s.money >= 50000, requires: 'money_5k' },
-  { id: 'terrain_cleared', text: 'Clear a terrain tile', check: (s) => Object.keys(s.terrainClearing).length === 0 && Object.keys(s.terrainMap).length < 16, requires: 'money_5k' },
+  { id: 'resilience_40', text: 'Reach 40% resilience', check: (s) => s.resilience >= 40, requires: 'survive_disaster' },
+  { id: 'terrain_cleared', text: 'Clear a mountain tile', check: (s) => Object.keys(s.terrainClearing).length === 0 && Object.keys(s.terrainMap).length < 16, requires: 'money_5k' },
   { id: 'event_5', text: 'Organize 5 events', check: (s) => s.eventsOrganized.length >= 5, requires: 'first_event' },
   { id: 'renewable_50', text: 'Reach 50% renewable energy', check: (s) => s.renewablePct >= 50, requires: 'renewable_built' },
+  { id: 'happiness_80', text: 'Reach 80% happiness', check: (s) => s.happiness >= 800, requires: 'happiness_60' },
+  { id: 'adjacency_5', text: 'Discover 5 building adjacency synergies', check: (s) => (s.seenAdjacencyPairs || []).length >= 5, requires: 'first_build' },
   { id: 'money_500k', text: 'Grow treasury to $500,000', check: (s) => s.money >= 500000, requires: 'money_50k' },
   { id: 'pop_500k', text: 'Reach 500,000 population', check: (s) => s.population >= 500000, requires: 'pop_5k' },
-  { id: 'resilience_50', text: 'Reach 50% resilience', check: (s) => s.resilience >= 50, requires: 'survive_disaster' },
+  { id: 'resilience_60', text: 'Reach 60% resilience', check: (s) => s.resilience >= 60, requires: 'resilience_40' },
   { id: 'event_10', text: 'Organize all 10 events', check: (s) => s.eventsOrganized.length >= 10, requires: 'event_5' },
-  { id: 'renewable_95', text: 'Reach 95% renewable energy', check: (s) => s.renewablePct >= 95, requires: 'renewable_50' },
+  { id: 'renewable_80', text: 'Reach 80% renewable energy', check: (s) => s.renewablePct >= 80, requires: 'renewable_50' },
+  { id: 'world_peace', text: 'Place the World Peace Garden', check: (s) => s.grid.some(r => r.some(c => c && c.id === 'world_peace')), requires: 'event_10' },
   { id: 'money_10M', text: 'Reach $10,000,000', check: (s) => s.money >= 10000000, requires: 'money_500k' },
 ];
 
@@ -353,7 +384,6 @@ const ADJACENCY_PAIRS: Array<{ a: string; b: string; effect: number; label: stri
   { a: 'park', b: 'house', effect: 2, label: 'Park + House' },
   { a: 'water_purifier', b: 'house', effect: 2, label: 'Water Purifier + House' },
   { a: 'vertical_forest', b: 'house', effect: 3, label: 'Vertical Forest + House' },
-  { a: 'recycling', b: 'shop', effect: 2, label: 'Recycling Center + Shop' },
   { a: 'research_lab', b: 'observatory', effect: 3, label: 'Research Lab + Observatory' },
   { a: 'factory', b: 'house', effect: -5, label: 'Factory + House' },
   { a: 'factory', b: 'park', effect: -5, label: 'Factory + Park' },
@@ -364,7 +394,7 @@ const ADJACENCY_PAIRS: Array<{ a: string; b: string; effect: number; label: stri
 
 const ADVISORY_TRIGGERS: Array<{ id: string; check: (state: GameState, prev: GameMeters) => boolean; message: string; canRepeat?: boolean }> = [
   { id: 'first_done', check: (s) => s.grid.some(r => r.some(c => c !== null)) && s.justCompleted.length > 0, message: 'Income is now active! Check your money meter.' },
-  { id: 'tsunami_hint', check: (s) => s.disasterLevels.tsunami >= 1, message: '🌊 Tsunami hit! Build Seawalls (edge tiles) and Wave Absorbers to protect your coast.' },
+  { id: 'tsunami_hint', check: (s) => s.disasterLevels.tsunami >= 1, message: '🌊 Tsunami hit! Build Seawalls and Wave Absorbers (edge tiles) — each protects a 3-wide × 3-deep area from its edge.' },
   { id: 'quake_hint', check: (s) => s.disasterLevels.earthquake >= 1, message: '🔥 Earthquake struck! Emergency Centers and Resilience reduce building destruction.' },
   { id: 'drought_hint', check: (s) => s.disasterLevels.drought >= 1, message: '☀️ Drought! Water buildings reduce population loss. Build Water Purifiers and more!' },
   { id: 'smog_hint', check: (s) => s.disasterLevels.smog >= 1, message: '💨 Smog! Green buildings reduce pollution and population loss. Build Parks and green structures!' },
@@ -378,29 +408,9 @@ const ADVISORY_TRIGGERS: Array<{ id: string; check: (state: GameState, prev: Gam
   { id: 'events_intro', check: (s) => s.money >= 500 && s.eventsOrganized.length === 0 && Object.keys(s.eventTimers).length === 0, message: '🎪 You can now organize events! Switch to the Events tab in the left sidebar to see available community events that permanently boost your meters.' },
 ];
 
-function findTerrainBlock(tm: Record<string, TerrainTile>, r: number, c: number): string[] {
-  const type = tm[`${r},${c}`]?.type;
-  if (!type) return [];
-  const keys: string[] = [];
-  const visited = new Set<string>();
-  const stack = [`${r},${c}`];
-  while (stack.length > 0) {
-    const key = stack.pop()!;
-    if (visited.has(key)) continue;
-    visited.add(key);
-    if (tm[key]?.type === type) {
-      keys.push(key);
-      const [rr, cc] = key.split(',').map(Number);
-      for (const [dr, dc] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
-        const nk = `${rr + dr},${cc + dc}`;
-        if (!visited.has(nk)) stack.push(nk);
-      }
-    }
-  }
-  return keys;
-}
-
-export const useGameStore = create<GameState>((set) => ({
+export const useGameStore = create<GameState>()(
+  persist(
+    (set) => ({
   grid: createEmptyGrid(GRID_SIZE),
   gridSize: GRID_SIZE,
   money: STARTING_MONEY,
@@ -476,10 +486,14 @@ export const useGameStore = create<GameState>((set) => ({
       : [...state.seenAdvisories, { id: 'terrain_info', message: 'Terrain can be cleared to free up more buildable land.' }];
     const cost = TERRAIN_CLEAR_COST[t.type];
     if (state.money < cost) return { seenAdvisories };
-    // Find and clear all tiles in this terrain block
-    const blockKeys = findTerrainBlock(state.terrainMap, row, col);
-    const newClearing = { ...state.terrainClearing };
-    for (const bk of blockKeys) newClearing[bk] = TERRAIN_CLEAR_TIME[t.type];
+    // Clear all tiles in the same terrain block (matching blockId)
+    const newClearing: Record<string, number> = { ...state.terrainClearing, [key]: TERRAIN_CLEAR_TIME[t.type] };
+    const bid = t.blockId;
+    for (const [k, v] of Object.entries(state.terrainMap)) {
+      if (v.blockId === bid && k !== key && (state.terrainClearing[k] ?? 0) === 0) {
+        newClearing[k] = TERRAIN_CLEAR_TIME[t.type];
+      }
+    }
     return {
       money: state.money - cost,
       terrainClearing: newClearing,
@@ -916,9 +930,10 @@ export const useGameStore = create<GameState>((set) => ({
       .map(q => ({ id: q.id, question: q.question, answers: q.answers, correctIndex: q.correctIndex, explanation: q.explanation }));
     return {
       disasterMinigame: { type, phase: 'intro', questions: selected, currentIndex: 0, score: 0, answered: false, chosenIndex: -1 },
-  minigameStats: null,
-  damageReport: null,
+      minigameStats: null,
+      damageReport: null,
       gameSpeed: 0, minigamePlayed: true,
+      prePopupSpeed: state.gameSpeed > 0 ? state.gameSpeed : state.prePopupSpeed,
     };
   }),
 
@@ -947,8 +962,8 @@ export const useGameStore = create<GameState>((set) => ({
   closeMinigame: () => set((state) => {
     if (!state.disasterMinigame) return state;
     const score = state.disasterMinigame.score;
-    const pct = 1 - score * 0.175;
-    return { disasterMinigame: null, minigameScore: score, minigameStats: { score, pct }, gameSpeed: 1 };
+    const pct = 0.9 - score * 0.15;
+    return { disasterMinigame: null, minigameScore: score, minigameStats: { score, pct }, gameSpeed: state.prePopupSpeed || 1 };
   }),
 
   resetGame: () => set({
@@ -977,4 +992,24 @@ export const useGameStore = create<GameState>((set) => ({
   }),
 
   continueGame: () => set({ gameResult: null, gameSpeed: 1, hasWon: true }),
-}));
+  }),
+  {
+    name: 'green-city-tycoon',
+    storage: createJSONStorage(() => localStorage),
+    partialize: (state) => {
+      const actionKeys = new Set([
+        'tick', 'setGameSpeed', 'selectBuilding', 'placeBuilding', 'removeBuilding', 'clearTerrain',
+        'organizeEvent', 'dismissWarning', 'completeTutorial', 'restartTutorial', 'setTutorialStep',
+        'resetGame', 'continueGame', 'clearMeterDeltas', 'clearJustCompleted', 'toggleDevGrid',
+        'cancelDisaster', 'startDisaster', 'instantComplete', 'setDevDisasterLevel', 'toggleDevReveal',
+        'dismissEventPopup', 'showEventPopup', 'adjustMeter', 'confirmRemoval', 'cancelRemoval',
+        'startMinigame', 'answerMinigame', 'closeMinigame', 'nextMinigamePhase',
+      ]);
+      const data = Object.fromEntries(
+        Object.entries(state).filter(([k]) => !actionKeys.has(k))
+      ) as Partial<GameState>;
+      return { ...data, gameSpeed: 0 };
+    },
+    version: 1,
+  }
+));

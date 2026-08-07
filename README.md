@@ -2,23 +2,40 @@
 
 A sustainability-themed city management simulation built with React and Three.js. Players plan and grow a green city on a 9×9 grid, balancing economic growth against pollution, renewable energy adoption, and citizen happiness.
 
+**[Live Demo](https://green-city-tycoon-nine.vercel.app/)** | **[GitHub](https://github.com/marcolo0714-lgtm/Green-City-Tycoon)**
+
+## Screenshots
+
+![Starting Screen](image_reference/starting_screen.png)
+*Game layout: top status bar, left building menu, center 3D grid, right meter panel.*
+
+![All Buildings Placed](image_reference/all_buildings_unlocked_and_placed.png)
+*All buildings unlocked and placed on the grid showing the full city layout.*
+
+![Disaster Defense Minigame](image_reference/disaster_defense_educational_minigame.png)
+*Disaster defense educational minigame: 4-question quiz with teacher character and damage reduction scoring.*
+
+![Smog Aftermath](image_reference/smog_aftermath_effects_and_report.png)
+*Smog disaster aftermath showing the damage report box during the 3-day recovery phase.*
+
 ## Game Overview
 
-Place 30 unique buildings across 7 categories — Economic, Green, Water, Energy, Coastal, Waste, and Science — each with its own 3D model. Organize 10 city-wide events that unlock new buildings and provide permanent compounding stat multipliers. Defend against tsunamis, earthquakes, droughts, and smog through educational quiz-based minigames and strategic building placement.
+Place 30 unique buildings across 6 categories — Economic, Green, Water, Energy, Coastal, and Science — each with its own 3D model. Organize 10 city-wide events that unlock new buildings and provide permanent compounding stat multipliers. Defend against tsunamis, earthquakes, droughts, and smog through educational quiz-based minigames and strategic building placement.
 
-Six real-time meters track city performance: **Money**, **Population**, **Pollution**, **Happiness**, **Renewable Energy**, and **Resilience**. Building adjacency synergies reward thoughtful urban planning — placing a Water Purifier next to a House boosts happiness, while a Factory next to a Park diminishes it.
+Six real-time meters track city performance: **Money**, **Population**, **Pollution**, **Happiness**, **Renewable Energy**, and **Resilience**. Building adjacency synergies reward thoughtful urban planning — placing a Park next to a House boosts happiness, while a Factory next to a Park diminishes it.
 
 ## Features
 
 - **30 buildings** with unique 3D models, all four-side decorated
 - **10 progression events** with permanent multiplicative stat multipliers
 - **4 disaster types** (tsunami, earthquake, drought, smog) with 3D visual effects
-- **Educational minigame** — 110 quiz questions across 5 categories, up to 70% damage reduction
-- **Building adjacency synergies** — 10 pair types with per-day happiness bonuses or penalties
+- **Educational minigame** — 110 quiz questions across 5 categories, 10–70% damage reduction
+- **Building adjacency synergies** — 9 pair types with per-day happiness bonuses or penalties
 - **Streak-based penalties** for prolonged pollution and overcrowding
 - **Persistent meter accumulation** — happiness and penalties compound over time
-- **Adjacency-based terrain blocks** (mountain, lake, forest) with clearing costs
-- **Tutorial walkthrough** for new players
+- **Terrain blocks** (mountain, lake, forest) with clearing costs
+- **Tutorial walkthrough** and mobile-responsive layout
+- **Game state persistence** — progress saved to browser and restored on reload
 - **Achievement objectives** with 20 goals
 
 ## Tech Stack
@@ -37,7 +54,7 @@ Six real-time meters track city performance: **Money**, **Population**, **Pollut
 ```
 src/
   components/    16 React components (3D scene, UI panels, overlays)
-  store/         Zustand store with all game logic (~900 lines)
+  store/         Zustand store with all game logic (~1000 lines)
   data/          Building definitions, event definitions, quiz questions
   types/         Full TypeScript type system
   util/          Utility functions

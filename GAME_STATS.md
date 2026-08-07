@@ -15,14 +15,14 @@ Events are one-time purchases that provide **permanent compounding multipliers**
 
 | # | Event | Cost | Days | Pop Req | Conditions | Key Effects |
 |---|---|---|---|---|---|---|
-| 1 | Community Green Day 🌱 | $500 | 2 | 50 | — | Inc ×2.0, Cap ×1.5, Grow ×2.0, Ren ×1.2 |
-| 2 | Clean Energy Kickstart ⚡ | $3K | 3 | 200 | **Ren≥5%** | Inc ×2.0, Poll ×0.5, Res ×1.5, Cap ×1.5 |
+| 1 | Community Green Day 🌱 | $500 | 2 | 50 | — | Inc ×2.0, Cap ×1.5, Grow ×2.0, Res ×1.5 |
+| 2 | Clean Energy Kickstart ⚡ | $3K | 3 | 200 | **Ren≥5%** | Inc ×2.0, Poll ×0.5, Ren ×1.2, Cap ×1.5 |
 | 3 | Coastal Shield Program 🛡️ | $8K | 3 | 500 | **Hap≥50%, Res≥8%** | Inc ×2.0, Res ×1.5, Cap ×2.0, Grow ×2.5 |
 | 4 | Solar City Initiative ☀️ | $20K | 4 | 1,500 | **Ren≥20%** | Inc ×2.5, Ren ×1.7, Cap ×2.0, Grow ×2.5 |
 | 5 | Water Security Initiative 🚰 | $50K | 4 | 5K | **Hap≥65%** | Inc ×2.5, Poll ×0.5, Cap ×2.5, Grow ×3.0 |
 | 6 | Green Architecture Expo 🏛️ | $120K | 5 | 15K | **Res≥25%** | Inc ×2.5, Cap ×3.0, Grow ×3.0 |
 | 7 | Water Renaissance 💧 | $300K | 5 | 50K | **Ren≥40%** | Inc ×3.0, Res ×2.0, Ren ×1.7, Grow ×3.0 |
-| 8 | Climate Innovation District 🔬 | $800K | 6 | 150K | **Res≥35%** | Inc ×3.0, Grow ×3.0, Poll ×0.4, Cap ×3.5 |
+| 8 | Climate Innovation District 🔬 | $800K | 6 | 150K | **Res≥75%** | Inc ×3.0, Grow ×3.0, Poll ×0.4, Cap ×3.5 |
 | 9 | Smart Resilient City 🏙️ | $2M | 7 | 500K | **Res≥30%** | Inc ×3.5, Cap ×4.0, Grow ×4.0 |
 | 10 | World Sustainability Summit 🕊️ | $5M | 8 | 2M | **Hap≥80%** | Inc ×4.0, Res ×2.0, Ren ×1.4, Poll ×0.4, Cap ×5.0, Grow ×5.0 |
 
@@ -59,7 +59,7 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 Rainwa
 | Event | Unlocks |
 |---|---|
 | #1 | Solar Panel |
-| #2 | Wind Turbine, Recycling Center, Composting Hub |
+| #2 | Wind Turbine |
 | #3 | Seawall, Wave Absorber |
 | #4 | Geothermal Plant, Office Tower |
 | #5 | Aquifer Recharge, Wetland Restoration |
@@ -90,10 +90,8 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 Rainwa
 |---|---|---|---|---|---|---|---|---|
 | Solar Panel | $150 | +14 | -3 | — | — | +6 | Energy | #1 |
 | Wind Turbine | $220 | +20 | -4 | — | — | +7 | Energy | #2 |
-| Recycling Center | $100 | +16 | -6 | — | — | — | Waste | #2 |
-| Composting Hub | $70 | +8 | -3 | — | — | +2 | Waste | #2 |
-| Seawall | $500 | 0 | 0 | — | +12 | — | Coastal | #3 |
-| Wave Absorber | $700 | 0 | 0 | — | +18 | — | Coastal | #3 |
+| Seawall | $500 | 0 | 0 | — | +5 | — | Coastal | #3 |
+| Wave Absorber | $700 | 0 | 0 | — | +5 | — | Coastal | #3 |
 | Geothermal Plant | $450 | +26 | -5 | — | +2 | +8 | Energy | #4 |
 | Office Tower | $350 | +35 | +5 | — | — | — | Economic | #4 |
 | Aquifer Recharge | $320 | +10 | -3 | — | +3 | — | Water | #5 |
@@ -103,10 +101,10 @@ Using a sample city with 5 Houses, 3 Shops, 2 Parks, 1 Solar Panel, and 1 Rainwa
 | Desalination | $650 | +20 | -4 | +0.3 | +4 | — | Water | #7 |
 | Wave Converter | $550 | +18 | -2 | — | +2 | +5 | Energy | #7 |
 | Research Lab | $1000 | +24 | -4 | — | +5 | +4 | Science | #8 |
-| Observatory | $800 | 0 | -2 | +0.5 | +7 | — | Science | #8 |
-| Emergency Center | $1400 | 0 | 0 | — | +16 | — | Science | #8 |
+| Observatory | $800 | 0 | -2 | +0.5 | +5 | — | Science | #8 |
+| Emergency Center | $1400 | 0 | 0 | — | +5 | — | Science | #8 |
 | Factory | $1800 | +50 | +15 | -0.3 | — | — | Economic | #9 |
-| Smart Grid Center | $3500 | +55 | -5 | — | +7 | +7 | Energy | #9 |
+| Smart Grid Center | $3500 | +55 | -5 | — | +5 | +7 | Energy | #9 |
 | Global Trade Hub | $6000 | +110 | 0 | +0.8 | +4 | — | Economic | #9 |
 | World Peace Garden | $12000 | 0 | -14 | +2.1 | — | — | Green | #10 |
 
@@ -123,7 +121,6 @@ Placing specific buildings next to each other (N/S/E/W, no diagonals) grants a p
 | Park + House | +0.2%/day |
 | Water Purifier + House | +0.2%/day |
 | Vertical Forest + House | +0.3%/day |
-| Recycling Center + Shop | +0.2%/day |
 | Research Lab + Observatory | +0.3%/day |
 
 ### Negative Pairs (−0.5%/day each)
@@ -235,7 +232,7 @@ Disaster level is **derived from events organized**:
 Random: **30% chance per day** (no active warning/disaster). Warning phase lasts 2–5 days (base 2, +1 per science building). Active phase lasts 3 days.
 
 ### Minigame Damage Reduction
-Score M (0-4) reduces all damage by `M × 17.5%` — max 70% at perfect score (M=4).
+Score M (0-4) reduces all damage by `(10 + 15 × M)%` — 10% if skipped, up to 70% at M=4: `pct = 0.9 − 0.15 × M`.
 
 ### 🌊 Tsunami
 
@@ -247,7 +244,7 @@ Score M (0-4) reduces all damage by `M × 17.5%` — max 70% at perfect score (M
 | 4 | 2 tiles | $60,000 | -75 | -30 |
 | 5 | 3 tiles | $200,000 | -90 | -45 |
 
-Seawall/Wave Absorber within 1 tile protects adjacent buildings unless bypassed at Level 5. Values shown before minigame reduction.
+Seawall/Wave Absorber are never destroyed. Each wall protects buildings on the same coastal side within ±1 tile along the coast and up to 3 tiles inward (max 9 buildings per wall). Corner buildings facing two edges require protection from both sides. Values shown before minigame reduction.
 
 ### 🔥 Earthquake
 
@@ -271,7 +268,7 @@ Defenses: Emergency Center (-1 destroyed), every 20 resilience (-1 destroyed). M
 | 4 | 2,000 | -40 | $150,000 |
 | 5 | 100,000 | -60 | $500,000 |
 
-Defense: each water building reduces population loss by 15% (max 90%). Water buildings also save 1 happiness each (max 5). Values before minigame reduction.
+Defense: each water building reduces population loss by 5% (max 50%). Water buildings also save 1 happiness each (max 5). Values before minigame reduction.
 
 ### 💨 Smog
 
@@ -283,7 +280,7 @@ Defense: each water building reduces population loss by 15% (max 90%). Water bui
 | 4 | +75 | 100 | -40 |
 | 5 | +95 | 500 | -60 |
 
-Defense: each green building reduces pollution and population loss by 15% (max 90%). Values before minigame reduction.
+Defense: each green building reduces pollution and population loss by 5% (max 50%). Values before minigame reduction.
 
 ---
 
@@ -308,3 +305,110 @@ Defense: each green building reduces pollution and population loss by 15% (max 9
 | "Citizens are leaving!" | Population < 50 |
 | "Pollution is choking the city!" | Pollution > 80% |
 | "Citizens are rioting!" | Happiness < 20% |
+
+---
+
+## Objectives (24 goals)
+
+| # | Goal | Unlocks after |
+|---|---|---|
+| 1 | Place your first building | — |
+| 2 | Earn $500 | #1 |
+| 3 | Reach 200 population | #1 |
+| 4 | Organize your first event | #2 |
+| 5 | Save up $5,000 | #4 |
+| 6 | Build a renewable energy building | #4 |
+| 7 | Reach 60% happiness | #1 |
+| 8 | Reach 5,000 population | #3 |
+| 9 | Survive a natural disaster | #3 |
+| 10 | Get a perfect score in the disaster defense minigame | #9 |
+| 11 | Amass $50,000 | #5 |
+| 12 | Reach 40% resilience | #9 |
+| 13 | Clear a mountain tile | #5 |
+| 14 | Organize 5 events | #4 |
+| 15 | Reach 50% renewable energy | #6 |
+| 16 | Reach 80% happiness | #7 |
+| 17 | Discover 5 building adjacency synergies | #1 |
+| 18 | Grow treasury to $500,000 | #11 |
+| 19 | Reach 500,000 population | #8 |
+| 20 | Reach 60% resilience | #12 |
+| 21 | Organize all 10 events | #14 |
+| 22 | Reach 80% renewable energy | #15 |
+| 23 | Place the World Peace Garden | #21 |
+| 24 | Reach $10,000,000 | #18 |
+
+---
+
+## Advisory Hints
+
+Advisory hints appear in the top-right notification area. One-time hints fire once and are dismissed; repeatable hints reappear when the condition is met.
+
+### One-time hints
+
+| ID | Message | Trigger |
+|---|---|---|
+| `first_done` | Income is now active! Check your money meter. | First building completes construction |
+| `terrain_info` | Terrain can be cleared to free up more buildable land. | First click on any terrain tile |
+| `disaster_prepare` | A disaster is coming! Tap 📚 Prepare to answer 4 questions and reduce the damage. | Disaster warning appears |
+| `events_intro` | 🎪 You can now organize events! Switch to the Events tab in the left sidebar to see available community events that permanently boost your meters. | Money ≥ $500 with no events organized or in progress |
+| `tsunami_hint` | 🌊 Tsunami hit! Build Seawalls and Wave Absorbers (edge tiles) — each protects a 3-wide × 3-deep area from its edge. | First tsunami disaster survived |
+| `quake_hint` | 🔥 Earthquake struck! Emergency Centers and Resilience reduce building destruction. | First earthquake disaster survived |
+| `drought_hint` | ☀️ Drought! Water buildings reduce population loss. Build Water Purifiers and more! | First drought disaster survived |
+| `smog_hint` | 💨 Smog! Green buildings reduce pollution and population loss. Build Parks and green structures! | First smog disaster survived |
+
+### Repeatable hints
+
+| ID | Message | Trigger |
+|---|---|---|
+| `money_warn` | ⚠️ Money low! Build economic buildings (House, Shop) to earn income. | Money warning active |
+| `pop_warn` | ⚠️ Population dropping! Provide more housing — build Houses or Shops. | Population warning active |
+| `pollution_warn` | ⚠️ Pollution critical! Build Parks, Green Roofs, or Renewable energy. | Pollution warning active |
+| `happiness_warn` | ⚠️ Citizens unhappy! Add Parks, Green Roofs, and reduce pollution. | Happiness warning active |
+| `overcrowding` | 🏘️ Overcrowding! Build more Houses or Shops to provide adequate housing. | Population > housing capacity |
+| `no_housing` | 🏚️ No housing! Build Houses or Shops to provide homes for your citizens — without housing, population will rapidly decline. | No housing buildings placed |
+
+---
+
+## Game Over Hints
+
+When the city collapses, the player sees one randomly selected hint from a pool of 5 per condition:
+
+### Money (Treasury ran dry)
+
+| # | Hint |
+|---|---|
+| 1 | 💡 Build Houses and Shops early to generate steady income. Organize events to multiply your earnings. |
+| 2 | 💡 Avoid buying expensive buildings you cannot sustain. Focus on income-generating buildings first. |
+| 3 | 💡 Organize events in order — each completed event stacks income multipliers multiplicatively. |
+| 4 | 💡 Clear cheap terrain (forests: $2K) early to make room for more income buildings. |
+| 5 | 💡 Check the Events tab — events with low requirements can be organized earliest for big income boosts. |
+
+### Population (Citizens abandoned the city)
+
+| # | Hint |
+|---|---|
+| 1 | 💡 Build Houses and Shops to provide housing — population cannot grow without room to live. |
+| 2 | 💡 Keep happiness above 30% for population growth. Parks and Green Roofs raise happiness daily. |
+| 3 | 💡 Organize events to multiply your population growth and housing capacity. |
+| 4 | 💡 If population is declining fast, pause construction and focus on housing buildings immediately. |
+| 5 | 💡 Green Roofs contribute to both housing capacity and happiness — great early-game value. |
+
+### Pollution (City uninhabitable)
+
+| # | Hint |
+|---|---|
+| 1 | 💡 Build Parks, Green Roofs, and Solar Panels to reduce pollution. Organize events to slash pollution multipliers. |
+| 2 | 💡 Green buildings reduce pollution impact during smog disasters. Keep at least 2-3 Parks or Green Roofs. |
+| 3 | 💡 Watch the Air Quality meter — when it drops below 50%, prioritize clean buildings over income. |
+| 4 | 💡 Avoid clustering Factories and Shops. Spread polluting buildings across the grid with clean buildings in between. |
+| 5 | 💡 The Clean Energy Kickstart event (Event 2) halves all pollution — organize it early. |
+
+### Happiness (Citizens rioted)
+
+| # | Hint |
+|---|---|
+| 1 | 💡 Add Parks (0.5% per day) and Green Roofs (0.2%) to steadily build happiness over time. |
+| 2 | 💡 Avoid overcrowding — if population exceeds housing capacity, happiness drops faster each day. |
+| 3 | 💡 Keep pollution below 50% — prolonged pollution causes escalating happiness penalties. |
+| 4 | 💡 Check building adjacency synergies — placing a Park next to a House gives +0.2% happiness per day. |
+| 5 | 💡 Disaster damage to happiness is permanent. Complete the minigame quiz with a perfect score to reduce happiness loss by 70%. |

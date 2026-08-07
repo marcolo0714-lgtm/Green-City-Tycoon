@@ -36,44 +36,52 @@ export default function BuildingMenu() {
     { id: 'first_build', text: 'Place your first building' },
     { id: 'money_500', text: 'Earn $500' },
     { id: 'pop_200', text: 'Reach 200 population' },
-    { id: 'park_built', text: 'Build a Park or Green Roof' },
     { id: 'first_event', text: 'Organize your first event' },
     { id: 'money_5k', text: 'Save up $5,000' },
     { id: 'renewable_built', text: 'Build a renewable energy building' },
     { id: 'happiness_60', text: 'Reach 60% happiness' },
     { id: 'pop_5k', text: 'Reach 5,000 population' },
     { id: 'survive_disaster', text: 'Survive a natural disaster' },
+    { id: 'perfect_minigame', text: 'Get a perfect score in the disaster defense minigame' },
     { id: 'money_50k', text: 'Amass $50,000' },
-    { id: 'terrain_cleared', text: 'Clear a terrain tile' },
+    { id: 'resilience_40', text: 'Reach 40% resilience' },
+    { id: 'terrain_cleared', text: 'Clear a mountain tile' },
     { id: 'event_5', text: 'Organize 5 events' },
     { id: 'renewable_50', text: 'Reach 50% renewable energy' },
+    { id: 'happiness_80', text: 'Reach 80% happiness' },
+    { id: 'adjacency_5', text: 'Discover 5 building adjacency synergies' },
     { id: 'money_500k', text: 'Grow treasury to $500,000' },
     { id: 'pop_500k', text: 'Reach 500,000 population' },
-    { id: 'resilience_50', text: 'Reach 50% resilience' },
+    { id: 'resilience_60', text: 'Reach 60% resilience' },
     { id: 'event_10', text: 'Organize all 10 events' },
-    { id: 'renewable_95', text: 'Reach 95% renewable energy' },
+    { id: 'renewable_80', text: 'Reach 80% renewable energy' },
+    { id: 'world_peace', text: 'Place the World Peace Garden' },
     { id: 'money_10M', text: 'Reach $10,000,000' },
   ];
 
   const GOAL_DEPS: Record<string, string> = {
     money_500: 'first_build',
     pop_200: 'first_build',
-    park_built: 'pop_200',
     first_event: 'money_500',
     money_5k: 'first_event',
     renewable_built: 'first_event',
-    happiness_60: 'park_built',
+    happiness_60: 'first_build',
     pop_5k: 'pop_200',
-    survive_disaster: 'money_500',
+    survive_disaster: 'pop_200',
+    perfect_minigame: 'survive_disaster',
     money_50k: 'money_5k',
+    resilience_40: 'survive_disaster',
     terrain_cleared: 'money_5k',
     event_5: 'first_event',
     renewable_50: 'renewable_built',
+    happiness_80: 'happiness_60',
+    adjacency_5: 'first_build',
     money_500k: 'money_50k',
     pop_500k: 'pop_5k',
-    resilience_50: 'survive_disaster',
+    resilience_60: 'resilience_40',
     event_10: 'event_5',
-    renewable_95: 'renewable_50',
+    renewable_80: 'renewable_50',
+    world_peace: 'event_10',
     money_10M: 'money_500k',
   };
 
@@ -107,9 +115,8 @@ export default function BuildingMenu() {
         </button>
       </div>
 
-      {tab === 'buildings' && (
-        <>
-          <h2>Buildings</h2>
+      <div style={{ display: tab === 'buildings' ? 'block' : 'none' }}>
+        <h2>Buildings</h2>
           {(() => {
             const available = devRevealAll
               ? BUILDINGS
@@ -174,12 +181,10 @@ export default function BuildingMenu() {
               Cancel selection
             </button>
           )}
-        </>
-      )}
+      </div>
 
-      {tab === 'events' && (
-        <>
-          <h2>Events</h2>
+      <div style={{ display: tab === 'events' ? 'block' : 'none' }}>
+        <h2>Events</h2>
           {EVENTS.map((ev) => {
             const completed = eventsOrganized.includes(ev.id);
             const inProgress = eventTimers[ev.id] !== undefined;
@@ -262,12 +267,10 @@ export default function BuildingMenu() {
               </div>
             );
           })}
-        </>
-      )}
+      </div>
 
-      {tab === 'goals' && (
-        <>
-          <h2>Goals</h2>
+      <div style={{ display: tab === 'goals' ? 'block' : 'none' }}>
+        <h2>Goals</h2>
           <div className="goals-list">
             {visibleGoals.map((g) => {
               const done = completedObjectives.includes(g.id);
@@ -284,8 +287,7 @@ export default function BuildingMenu() {
           <div className="goals-progress">
             {completedObjectives.length} / {GOALS.length} completed
           </div>
-        </>
-      )}
+      </div>
     </div>
   );
 }
